@@ -4,7 +4,8 @@ let camera,
   sizes,
   orbitControls,
   ground,
-  lighting = [];
+  lighting = [],
+  model = [];
 
 const init = () => {
   //========== Canvas
@@ -20,65 +21,113 @@ const init = () => {
     height: 0.9 * window.innerHeight,
   };
   camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 4000);
-  camera.position.set(0, 150, 200);
+  camera.position.set(800, 750, 0);
 
   //========= Orbit Controls
   orbitControls = new THREE.OrbitControls(camera, canvas);
   orbitControls.target.set(0, 5, 0);
 
-  //========= Buat Renderer
+  //========= Create Renderer
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
   });
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setSize(sizes.width, sizes.height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   //========== Create Lighting
-  const dirLight1 = new THREE.DirectionalLight(0xffffff, 8);
-  dirLight1.position.y = 1000;
-  dirLight1.position.x = 10000;
-  const dirLight2 = new THREE.DirectionalLight(0xffffff, 20);
-  dirLight2.position.y = 1600;
-  // ambLight1.position.y = 30;
-  lighting.push(dirLight1);
-  lighting.push(dirLight2);
+  const hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 1.2);
+  lighting.push(hemiLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  dirLight.position.y = 500;
+  dirLight.position.x = 300;
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 1024;
+  dirLight.shadow.mapSize.height = 512;
+
+  dirLight.shadow.camera.near = 100;
+  dirLight.shadow.camera.far = 1200;
+
+  dirLight.shadow.camera.left = -1000;
+  dirLight.shadow.camera.right = 1000;
+  dirLight.shadow.camera.top = 350;
+  dirLight.shadow.camera.bottom = -350;
+  lighting.push(dirLight);
 
   lighting.forEach((light) => {
     scene.add(light);
   });
-  // scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 
   //========== Create Geometry
   ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(1600, 1600),
-    new THREE.MeshBasicMaterial({
-      color: 0x348c31,
+    new THREE.BoxGeometry(1600, 3200, 20),
+    new THREE.MeshStandardMaterial({
+      color: 0x0c4f1f,
       side: THREE.DoubleSide,
     })
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -2;
+  ground.position.y = -12;
+  ground.receiveShadow = true;
   scene.add(ground);
 
   let loader = new THREE.GLTFLoader();
-  loader.load("model/Car1/scene.gltf", (gltf) => {
-    scene.add(gltf.scene);
+  loader.load("model/Car/scene.gltf", (gltf) => {
+    let car = gltf.scene.children[0];
+    car.position.x += 100;
+    car.traverse((child) => {
+      if (child.isMesh) {
+        child.material.metalness = 0;
+        child.castShadow = true;
+      }
+    });
+    model.push(car);
+    scene.add(car);
+  });
+
+  //========== Load Model
+  loader.load("model/Goal/scene.gltf", (gltf) => {
+    let goal1 = gltf.scene.children[0];
+    goal1.position.z = 1400;
+    goal1.position.x = -250;
+    goal1.traverse((child) => {
+      if (child.isMesh) {
+        child.material.metalness = 0;
+        child.castShadow = true;
+      }
+    });
+    model.push(goal1);
+    scene.add(goal1);
   });
   loader.load("model/Goal/scene.gltf", (gltf) => {
-    gltf.scene.position.z = 850;
-    gltf.scene.position.x = -250;
-    scene.add(gltf.scene);
-  });
-  loader.load("model/Goal/scene.gltf", (gltf) => {
-    gltf.scene.position.z = -850;
-    gltf.scene.position.x = -250;
-    scene.add(gltf.scene);
+    let goal2 = gltf.scene.children[0];
+
+    goal2.position.z = -1400;
+    goal2.position.x = 250;
+    goal2.rotation.z = Math.PI;
+    goal2.traverse((child) => {
+      if (child.isMesh) {
+        child.material.metalness = 0;
+        child.castShadow = true;
+      }
+    });
+    model.push(goal2);
+    scene.add(goal2);
   });
   loader.load("model/Ball/scene.gltf", (gltf) => {
-    gltf.scene.scale.set(0.25, 0.25, 0.25);
-    gltf.scene.position.z = 100;
-    gltf.scene.position.y = 55;
-    scene.add(gltf.scene);
+    let ball = gltf.scene.children[0];
+    ball.scale.set(55, 55, 55);
+    ball.position.z = 100;
+    ball.position.y = 57;
+    ball.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+      }
+    });
+    model.push(ball);
+    scene.add(ball);
   });
 
   // ================== Interactive
