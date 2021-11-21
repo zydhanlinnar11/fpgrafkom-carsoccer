@@ -5,7 +5,8 @@ let camera,
   orbitControls,
   ground,
   lighting = [],
-  model = [];
+  model = [],
+  test = false;
 
 const init = () => {
   //========== Canvas
@@ -21,7 +22,7 @@ const init = () => {
     height: 0.9 * window.innerHeight,
   };
   camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 4000);
-  camera.position.set(800, 750, 0);
+  camera.position.set(600, 550, 0);
 
   //========= Orbit Controls
   orbitControls = new THREE.OrbitControls(camera, canvas);
@@ -50,10 +51,10 @@ const init = () => {
   dirLight.shadow.camera.near = 100;
   dirLight.shadow.camera.far = 1200;
 
-  dirLight.shadow.camera.left = -1000;
-  dirLight.shadow.camera.right = 1000;
-  dirLight.shadow.camera.top = 350;
-  dirLight.shadow.camera.bottom = -350;
+  dirLight.shadow.camera.left = -1600;
+  dirLight.shadow.camera.right = 1600;
+  dirLight.shadow.camera.top = 800;
+  dirLight.shadow.camera.bottom = -800;
   lighting.push(dirLight);
 
   lighting.forEach((light) => {
@@ -73,10 +74,10 @@ const init = () => {
   ground.receiveShadow = true;
   scene.add(ground);
 
+  //========== Load Model
   let loader = new THREE.GLTFLoader();
   loader.load("model/Car/scene.gltf", (gltf) => {
-    let car = gltf.scene.children[0];
-    car.position.x += 100;
+    const car = gltf.scene.children[0];
     car.traverse((child) => {
       if (child.isMesh) {
         child.material.metalness = 0;
@@ -86,8 +87,6 @@ const init = () => {
     model.push(car);
     scene.add(car);
   });
-
-  //========== Load Model
   loader.load("model/Goal/scene.gltf", (gltf) => {
     let goal1 = gltf.scene.children[0];
     goal1.position.z = 1400;
@@ -103,7 +102,6 @@ const init = () => {
   });
   loader.load("model/Goal/scene.gltf", (gltf) => {
     let goal2 = gltf.scene.children[0];
-
     goal2.position.z = -1400;
     goal2.position.x = 250;
     goal2.rotation.z = Math.PI;
@@ -146,13 +144,18 @@ const init = () => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   });
 
+  document.addEventListener("keydown", (e) => {
+    e.preventDefault();
+    movingCar(orbitControls, model[3], e.key);
+  });
+
   mainLoop();
 };
 
 const mainLoop = () => {
   renderer.render(scene, camera);
   orbitControls.update();
-  window.requestAnimationFrame(mainLoop);
+  requestAnimationFrame(mainLoop);
 };
 
 init();
