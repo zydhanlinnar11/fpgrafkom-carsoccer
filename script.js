@@ -62,11 +62,14 @@ const init = () => {
   });
 
   //========== Create Geometry
+  const textureLoader = new THREE.TextureLoader();
+  const grassTexture = textureLoader.load("texture/grass.jpg");
   ground = new THREE.Mesh(
     new THREE.BoxGeometry(1600, 3200, 20),
     new THREE.MeshStandardMaterial({
       color: 0x0c4f1f,
       side: THREE.DoubleSide,
+      map: grassTexture,
     })
   );
   ground.rotation.x = -Math.PI / 2;
