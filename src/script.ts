@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
 const scene = new THREE.Scene()
 
@@ -93,6 +94,29 @@ carBody.position.x = carBodyMesh.position.x
 carBody.position.y = carBodyMesh.position.y
 carBody.position.z = carBodyMesh.position.z
 world.addBody(carBody)
+
+const loader = new GLTFLoader().load('Car/scene.gltf', function (result) {
+  const octane = result.scene.children[0]
+  octane.castShadow = true
+  octane.scale.set(0.025, 0.025, 0.025)
+  octane.traverse((child) => {
+    //@ts-ignore
+    if (child.isMesh) {
+      //@ts-ignore
+      child.material.metalness = 0
+      child.castShadow = true
+    }
+  })
+  scene.add(octane)
+  const octaneBodyShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 1))
+  const octaneBody = new CANNON.Body({ mass: 10 })
+  octaneBody.addShape(octaneBodyShape)
+  octaneBody.position.x = octane.position.x
+  octaneBody.position.y = octane.position.y
+  octaneBody.position.z = octane.position.z
+  world.addBody(octaneBody)
+  console.log(octane.children[0].children[0].children)
+})
 
 //front left wheel
 const wheelLFGeometry: THREE.CylinderGeometry = new THREE.CylinderGeometry(
