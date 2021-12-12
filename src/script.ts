@@ -94,7 +94,7 @@ const loader = new GLTFLoader().load('/Ball/scene.gltf', function (result) {
   scene.add(ball)
 
   const ballShape = new CANNON.Sphere(1.5)
-  ballBody = new CANNON.Body({ mass: 0.1 })
+  ballBody = new CANNON.Body({ mass: 0.0000000001 })
   ballBody.addShape(ballShape)
   ballBody.position.x = ball.position.x
   ballBody.position.y = ball.position.y
