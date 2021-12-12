@@ -14,7 +14,7 @@ export default function spawnBall(
     ball.castShadow = true
     ball.position.x = 0
     ball.position.y = 1.5
-    ball.position.z = -5
+    ball.position.z = 0
     scene.add(ball)
 
     const ballBody = new CANNON.Body({ mass: 0.0000000001 })
