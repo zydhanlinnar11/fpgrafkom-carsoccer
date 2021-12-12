@@ -351,7 +351,12 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   scene.add(octaneRF)
   const down = new CANNON.Vec3(0, 0, -1)
 
-  const octaneRFShape = new CANNON.Sphere(0.35)
+  const quat = new CANNON.Quaternion()
+  const translation = new CANNON.Vec3(0, 0, 0)
+  quat.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
+
+  const octaneRFShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
+  octaneRFShape.transformAllPoints(translation, quat)
   octaneRFBody = new CANNON.Body({ mass: 1 })
   octaneRFBody.addShape(octaneRFShape, new CANNON.Vec3(0, 0, 0))
   octaneRFBody.position.x = octaneRF.position.x
@@ -374,7 +379,8 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octaneLF.position.z = -0.6
   scene.add(octaneLF)
 
-  const octaneLFShape = new CANNON.Sphere(0.35)
+  const octaneLFShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
+  octaneLFShape.transformAllPoints(translation, quat)
   octaneLFBody = new CANNON.Body({ mass: 1 })
   octaneLFBody.addShape(octaneLFShape, new CANNON.Vec3(0, 0, 0))
   octaneLFBody.position.x = octaneLF.position.x
@@ -397,7 +403,8 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octaneRB.position.z = 0.6
   scene.add(octaneRB)
 
-  const octaneRBShape = new CANNON.Sphere(0.35)
+  const octaneRBShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
+  octaneRBShape.transformAllPoints(translation, quat)
   octaneRBBody = new CANNON.Body({ mass: 1 })
   octaneRBBody.addShape(octaneRBShape, new CANNON.Vec3(0, 0, 0))
   octaneRBBody.position.x = octaneRB.position.x
@@ -420,7 +427,8 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octaneLB.position.z = -0.6
   scene.add(octaneLB)
 
-  const octaneLBShape = new CANNON.Sphere(0.35)
+  const octaneLBShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
+  octaneLBShape.transformAllPoints(translation, quat)
   octaneLBBody = new CANNON.Body({ mass: 1 })
   octaneLBBody.addShape(octaneLBShape, new CANNON.Vec3(0, 0, 0))
   octaneLBBody.position.x = octaneLB.position.x
