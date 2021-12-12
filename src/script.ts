@@ -3,6 +3,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import Object3DGLTF from './interface/Object3DGLTF'
 
 const scene = new THREE.Scene()
 
@@ -99,10 +100,8 @@ const loader = new GLTFLoader().load('Car/scene.gltf', function (result) {
   const octane = result.scene.children[0]
   octane.castShadow = true
   octane.scale.set(0.025, 0.025, 0.025)
-  octane.traverse((child) => {
-    //@ts-ignore
+  octane.traverse((child: Object3DGLTF) => {
     if (child.isMesh) {
-      //@ts-ignore
       child.material.metalness = 0
       child.castShadow = true
     }
@@ -115,7 +114,22 @@ const loader = new GLTFLoader().load('Car/scene.gltf', function (result) {
   octaneBody.position.y = octane.position.y
   octaneBody.position.z = octane.position.z
   world.addBody(octaneBody)
-  console.log(octane.children[0].children[0].children)
+
+  const nodes = octane.children[0].children[0].children
+  const octaneFL = nodes[0]
+  const octaneFR = nodes[1]
+  const octaneBL = nodes[2]
+  const octaneBR = nodes[3]
+  const octaneWheelRadius = 0.33
+  const octaneWheelMass = 1
+
+  // front left
+  const octaneFLShape = new CANNON.Sphere(octaneWheelRadius)
+  const wheelLFBody = new CANNON.Body({
+    mass: octaneWheelMass,
+  })
+
+  //   octaneFR.rotateZ(Math.PI/2)
 })
 
 //front left wheel
