@@ -304,12 +304,16 @@ let octane: Object3DGLTF | null = null
 let octaneBody: CANNON.Body | null = null
 let octaneRF: Object3DGLTF | null = null
 let octaneRFBody: CANNON.Body | null = null
+let octaneRFConstraint: CANNON.HingeConstraint | null = null
 let octaneLF: Object3DGLTF | null = null
 let octaneLFBody: CANNON.Body | null = null
+let octaneLFConstraint: CANNON.HingeConstraint | null = null
 let octaneRB: Object3DGLTF | null = null
 let octaneRBBody: CANNON.Body | null = null
+let octaneRBConstraint: CANNON.HingeConstraint | null = null
 let octaneLB: Object3DGLTF | null = null
 let octaneLBBody: CANNON.Body | null = null
+let octaneLBConstraint: CANNON.HingeConstraint | null = null
 
 new GLTFLoader().load('/Car/scene.gltf', function (result) {
   const nodes = result.scene.children[0].children[0].children[0].children
@@ -352,17 +356,13 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octaneRFBody.position.z = octaneRF.position.z
   world.addBody(octaneRFBody)
 
-  const octaneConstraintRF = new CANNON.HingeConstraint(
-    octaneBody,
-    octaneRFBody,
-    {
-      pivotA: new CANNON.Vec3(1.1, -0.25, 0.6),
-      axisA: axis,
-      pivotB: Vec3.ZERO,
-      axisB: axis,
-    }
-  )
-  world.addConstraint(octaneConstraintRF)
+  octaneRFConstraint = new CANNON.HingeConstraint(octaneBody, octaneRFBody, {
+    pivotA: new CANNON.Vec3(1.1, -0.25, 0.6),
+    axisA: axis,
+    pivotB: Vec3.ZERO,
+    axisB: axis,
+  })
+  world.addConstraint(octaneRFConstraint)
 
   octaneLF.scale.set(2, 2, 2)
   octaneLF.castShadow = true
@@ -379,17 +379,13 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octaneLFBody.position.z = octaneLF.position.z
   world.addBody(octaneLFBody)
 
-  const octaneConstraintLF = new CANNON.HingeConstraint(
-    octaneBody,
-    octaneLFBody,
-    {
-      pivotA: new CANNON.Vec3(1.1, -0.25, -0.6),
-      axisA: axis,
-      pivotB: Vec3.ZERO,
-      axisB: axis,
-    }
-  )
-  world.addConstraint(octaneConstraintLF)
+  octaneLFConstraint = new CANNON.HingeConstraint(octaneBody, octaneLFBody, {
+    pivotA: new CANNON.Vec3(1.1, -0.25, -0.6),
+    axisA: axis,
+    pivotB: Vec3.ZERO,
+    axisB: axis,
+  })
+  world.addConstraint(octaneLFConstraint)
 
   octaneRB.scale.set(2, 2, 2)
   octaneRB.castShadow = true
@@ -406,17 +402,13 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octaneRBBody.position.z = octaneRB.position.z
   world.addBody(octaneRBBody)
 
-  const octaneConstraintRB = new CANNON.HingeConstraint(
-    octaneBody,
-    octaneRBBody,
-    {
-      pivotA: new CANNON.Vec3(-0.5, -0.25, 0.6),
-      axisA: axis,
-      pivotB: Vec3.ZERO,
-      axisB: axis,
-    }
-  )
-  world.addConstraint(octaneConstraintRB)
+  octaneRBConstraint = new CANNON.HingeConstraint(octaneBody, octaneRBBody, {
+    pivotA: new CANNON.Vec3(-0.5, -0.25, 0.6),
+    axisA: axis,
+    pivotB: Vec3.ZERO,
+    axisB: axis,
+  })
+  world.addConstraint(octaneRBConstraint)
 
   octaneLB.scale.set(2, 2, 2)
   octaneLB.castShadow = true
@@ -433,17 +425,13 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octaneLBBody.position.z = octaneLB.position.z
   world.addBody(octaneLBBody)
 
-  const octaneConstraintLB = new CANNON.HingeConstraint(
-    octaneBody,
-    octaneLBBody,
-    {
-      pivotA: new CANNON.Vec3(-0.5, -0.25, -0.6),
-      axisA: axis,
-      pivotB: Vec3.ZERO,
-      axisB: axis,
-    }
-  )
-  world.addConstraint(octaneConstraintLB)
+  octaneLBConstraint = new CANNON.HingeConstraint(octaneBody, octaneLBBody, {
+    pivotA: new CANNON.Vec3(-0.5, -0.25, -0.6),
+    axisA: axis,
+    pivotB: Vec3.ZERO,
+    axisB: axis,
+  })
+  world.addConstraint(octaneLBConstraint)
 })
 
 const phongMaterial = new THREE.MeshPhongMaterial()
@@ -788,6 +776,8 @@ function animate() {
   )
 
   thrusting = false
+  octaneRFConstraint.axisA.set(0, 0, octaneRFConstraint.axisA.z)
+  octaneLFConstraint.axisA.set(0, 0, octaneRFConstraint.axisA.z)
   if (keyMap['w'] || keyMap['ArrowUp']) {
     if (forwardVelocity < 100.0) forwardVelocity += 1
     thrusting = true
@@ -798,9 +788,13 @@ function animate() {
   }
   if (keyMap['a'] || keyMap['ArrowLeft']) {
     if (rightVelocity > -1.0) rightVelocity -= 0.1
+    octaneRFConstraint.axisA.set(Math.PI / 4, 0, octaneRFConstraint.axisA.z)
+    octaneLFConstraint.axisA.set(Math.PI / 4, 0, octaneRFConstraint.axisA.z)
   }
   if (keyMap['d'] || keyMap['ArrowRight']) {
     if (rightVelocity < 1.0) rightVelocity += 0.1
+    octaneRFConstraint.axisA.set(-Math.PI / 4, 0, octaneRFConstraint.axisA.z)
+    octaneLFConstraint.axisA.set(-Math.PI / 4, 0, octaneRFConstraint.axisA.z)
   }
   if (keyMap[' ']) {
     if (forwardVelocity > 0) {
