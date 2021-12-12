@@ -1,12 +1,260 @@
 import * as THREE from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import * as CANNON from 'cannon-es'
-import CannonDebugRenderer from './utils/cannonDebugRenderer'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import Object3DGLTF from './interface/Object3DGLTF'
 import createWall from './wall'
 import createPlane, { PlaneSize } from './plane'
 import spawnBall from './ball'
+import { Vec3 } from 'cannon-es'
+
+/**
+ * Adds Three.js primitives into the scene where all the Cannon bodies and shapes are.
+ * @class CannonDebugRenderer
+ * @param {THREE.Scene} scene
+ * @param {CANNON.World} world
+ * @param {object} [options]
+ */
+// @ts-ignore
+THREE.CannonDebugRenderer = function (scene, world, options) {
+  options = options || {}
+
+  this.scene = scene
+  this.world = world
+
+  this._meshes = []
+
+  this._material = new THREE.MeshBasicMaterial({
+    color: 0x00ff00,
+    wireframe: true,
+  })
+  this._sphereGeometry = new THREE.SphereGeometry(1)
+  this._boxGeometry = new THREE.BoxGeometry(1, 1, 1)
+  this._planeGeometry = new THREE.PlaneGeometry(10, 10, 10, 10)
+  this._cylinderGeometry = new THREE.CylinderGeometry(1, 1, 10, 10)
+}
+
+// @ts-ignore
+THREE.CannonDebugRenderer.prototype = {
+  tmpVec0: new CANNON.Vec3(),
+  tmpVec1: new CANNON.Vec3(),
+  tmpVec2: new CANNON.Vec3(),
+  tmpQuat0: new CANNON.Vec3(),
+
+  update: function () {
+    var bodies = this.world.bodies
+    var meshes = this._meshes
+    var shapeWorldPosition = this.tmpVec0
+    var shapeWorldQuaternion = this.tmpQuat0
+
+    var meshIndex = 0
+
+    for (var i = 0; i !== bodies.length; i++) {
+      var body = bodies[i]
+
+      for (var j = 0; j !== body.shapes.length; j++) {
+        var shape = body.shapes[j]
+
+        this._updateMesh(meshIndex, body, shape)
+
+        var mesh = meshes[meshIndex]
+
+        if (mesh) {
+          // Get world position
+          body.quaternion.vmult(body.shapeOffsets[j], shapeWorldPosition)
+          body.position.vadd(shapeWorldPosition, shapeWorldPosition)
+
+          // Get world quaternion
+          body.quaternion.mult(body.shapeOrientations[j], shapeWorldQuaternion)
+
+          // Copy to meshes
+          mesh.position.copy(shapeWorldPosition)
+          mesh.quaternion.copy(shapeWorldQuaternion)
+        }
+
+        meshIndex++
+      }
+    }
+
+    for (var i = meshIndex; i < meshes.length; i++) {
+      var mesh = meshes[i]
+      if (mesh) {
+        this.scene.remove(mesh)
+      }
+    }
+
+    meshes.length = meshIndex
+  },
+
+  // @ts-ignore
+  _updateMesh: function (index, body, shape) {
+    var mesh = this._meshes[index]
+    if (!this._typeMatch(mesh, shape)) {
+      if (mesh) {
+        this.scene.remove(mesh)
+      }
+      mesh = this._meshes[index] = this._createMesh(shape)
+    }
+    this._scaleMesh(mesh, shape)
+  },
+
+  // @ts-ignore
+  _typeMatch: function (mesh, shape) {
+    if (!mesh) {
+      return false
+    }
+    var geo = mesh.geometry
+    return (
+      (geo instanceof THREE.SphereGeometry && shape instanceof CANNON.Sphere) ||
+      (geo instanceof THREE.BoxGeometry && shape instanceof CANNON.Box) ||
+      (geo instanceof THREE.PlaneGeometry && shape instanceof CANNON.Plane) ||
+      (geo.id === shape.geometryId &&
+        shape instanceof CANNON.ConvexPolyhedron) ||
+      (geo.id === shape.geometryId && shape instanceof CANNON.Trimesh) ||
+      (geo.id === shape.geometryId && shape instanceof CANNON.Heightfield)
+    )
+  },
+
+  // @ts-ignore
+  _createMesh: function (shape) {
+    var mesh
+    var material = this._material
+
+    switch (shape.type) {
+      case CANNON.Shape.types.SPHERE:
+        mesh = new THREE.Mesh(this._sphereGeometry, material)
+        break
+
+      case CANNON.Shape.types.BOX:
+        mesh = new THREE.Mesh(this._boxGeometry, material)
+        break
+
+      case CANNON.Shape.types.PLANE:
+        mesh = new THREE.Mesh(this._planeGeometry, material)
+        break
+
+      case CANNON.Shape.types.CONVEXPOLYHEDRON:
+        // Create mesh
+        // @ts-ignore
+        var geo = new THREE.Geometry()
+
+        // Add vertices
+        for (var i = 0; i < shape.vertices.length; i++) {
+          var v = shape.vertices[i]
+          geo.vertices.push(new THREE.Vector3(v.x, v.y, v.z))
+        }
+
+        for (var i = 0; i < shape.faces.length; i++) {
+          var face = shape.faces[i]
+
+          // add triangles
+          var a = face[0]
+          for (var j = 1; j < face.length - 1; j++) {
+            var b = face[j]
+            var c = face[j + 1]
+            // @ts-ignore
+            geo.faces.push(new THREE.Face3(a, b, c))
+          }
+        }
+        geo.computeBoundingSphere()
+        geo.computeFaceNormals()
+
+        mesh = new THREE.Mesh(geo, material)
+        shape.geometryId = geo.id
+        break
+
+      case CANNON.Shape.types.TRIMESH:
+        // @ts-ignore
+        var geometry = new THREE.Geometry()
+        var v0 = this.tmpVec0
+        var v1 = this.tmpVec1
+        var v2 = this.tmpVec2
+        for (var i = 0; i < shape.indices.length / 3; i++) {
+          shape.getTriangleVertices(i, v0, v1, v2)
+          geometry.vertices.push(
+            new THREE.Vector3(v0.x, v0.y, v0.z),
+            new THREE.Vector3(v1.x, v1.y, v1.z),
+            new THREE.Vector3(v2.x, v2.y, v2.z)
+          )
+          var j = geometry.vertices.length - 3
+          // @ts-ignore
+          geometry.faces.push(new THREE.Face3(j, j + 1, j + 2))
+        }
+        geometry.computeBoundingSphere()
+        geometry.computeFaceNormals()
+        mesh = new THREE.Mesh(geometry, material)
+        shape.geometryId = geometry.id
+        break
+
+      case CANNON.Shape.types.HEIGHTFIELD:
+        // @ts-ignore
+        var geometry = new THREE.Geometry()
+
+        var v0 = this.tmpVec0
+        var v1 = this.tmpVec1
+        var v2 = this.tmpVec2
+        for (var xi = 0; xi < shape.data.length - 1; xi++) {
+          for (var yi = 0; yi < shape.data[xi].length - 1; yi++) {
+            for (var k = 0; k < 2; k++) {
+              shape.getConvexTrianglePillar(xi, yi, k === 0)
+              v0.copy(shape.pillarConvex.vertices[0])
+              v1.copy(shape.pillarConvex.vertices[1])
+              v2.copy(shape.pillarConvex.vertices[2])
+              v0.vadd(shape.pillarOffset, v0)
+              v1.vadd(shape.pillarOffset, v1)
+              v2.vadd(shape.pillarOffset, v2)
+              geometry.vertices.push(
+                new THREE.Vector3(v0.x, v0.y, v0.z),
+                new THREE.Vector3(v1.x, v1.y, v1.z),
+                new THREE.Vector3(v2.x, v2.y, v2.z)
+              )
+              var i = geometry.vertices.length - 3
+              // @ts-ignore
+              geometry.faces.push(new THREE.Face3(i, i + 1, i + 2))
+            }
+          }
+        }
+        geometry.computeBoundingSphere()
+        geometry.computeFaceNormals()
+        mesh = new THREE.Mesh(geometry, material)
+        shape.geometryId = geometry.id
+        break
+    }
+
+    if (mesh) {
+      this.scene.add(mesh)
+    }
+
+    return mesh
+  },
+
+  // @ts-ignore
+  _scaleMesh: function (mesh, shape) {
+    switch (shape.type) {
+      case CANNON.Shape.types.SPHERE:
+        var radius = shape.radius
+        mesh.scale.set(radius, radius, radius)
+        break
+
+      case CANNON.Shape.types.BOX:
+        mesh.scale.copy(shape.halfExtents)
+        mesh.scale.multiplyScalar(2)
+        break
+
+      case CANNON.Shape.types.CONVEXPOLYHEDRON:
+        mesh.scale.set(1, 1, 1)
+        break
+
+      case CANNON.Shape.types.TRIMESH:
+        mesh.scale.copy(shape.scale)
+        break
+
+      case CANNON.Shape.types.HEIGHTFIELD:
+        mesh.scale.set(1, 1, 1)
+        break
+    }
+  },
+}
 
 const scene = new THREE.Scene()
 const planeSize: PlaneSize = { width: 157.5, height: 102 }
@@ -16,14 +264,9 @@ light.position.set(0, 50, 0)
 scene.add(light)
 light.castShadow = true
 
-const size = {
-  width: window.innerWidth - 48,
-  height: window.innerHeight - 64,
-}
-
 const camera = new THREE.PerspectiveCamera(
   75,
-  size.width / size.height,
+  window.innerWidth / window.innerHeight,
   0.1,
   1000
 )
@@ -37,19 +280,13 @@ scene.add(chaseCam)
 const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector('.webgl'),
 })
-renderer.setSize(size.width, size.height)
+renderer.setSize(window.innerWidth, window.innerHeight)
 // renderer.shadowMap.enabled = true
 // renderer.shadowMap.type = THREE.PCFSoftShadowMap
 document.body.appendChild(renderer.domElement)
 
-const phongMaterial = new THREE.MeshPhongMaterial()
-
 const world = new CANNON.World()
 world.gravity.set(0, -9.82, 0)
-
-const wheelMaterial = new CANNON.Material('wheelMaterial')
-wheelMaterial.friction = 0.25
-wheelMaterial.restitution = 0.25
 
 //ground
 
@@ -62,6 +299,158 @@ spawnBall(scene, world, (retBall: Object3DGLTF, retBallBody: CANNON.Body) => {
   ball = retBall
   ballBody = retBallBody
 })
+
+let octane: Object3DGLTF | null = null
+let octaneBody: CANNON.Body | null = null
+let octaneRF: Object3DGLTF | null = null
+let octaneRFBody: CANNON.Body | null = null
+let octaneLF: Object3DGLTF | null = null
+let octaneLFBody: CANNON.Body | null = null
+let octaneRB: Object3DGLTF | null = null
+let octaneRBBody: CANNON.Body | null = null
+let octaneLB: Object3DGLTF | null = null
+let octaneLBBody: CANNON.Body | null = null
+
+new GLTFLoader().load('/Car/scene.gltf', function (result) {
+  const nodes = result.scene.children[0].children[0].children[0].children
+  octane = nodes[0] as Object3DGLTF
+  octaneRF = nodes[1] as Object3DGLTF
+  octaneLF = nodes[2] as Object3DGLTF
+  octaneRB = nodes[3] as Object3DGLTF
+  octaneLB = nodes[4] as Object3DGLTF
+
+  octane.scale.set(2, 2, 2)
+  octane.castShadow = true
+  octane.position.x = 3
+  octane.position.y = 1
+  octane.position.z = 0
+  scene.add(octane)
+
+  const octaneShape = new CANNON.Box(new CANNON.Vec3(1.1, 0.3125, 0.375))
+  octaneBody = new CANNON.Body({ mass: 1 })
+  octaneBody.addShape(octaneShape, new CANNON.Vec3(0, 0.418, 0))
+  octaneBody.position.x = octane.position.x
+  octaneBody.position.y = octane.position.y
+  octaneBody.position.z = octane.position.z
+  world.addBody(octaneBody)
+
+  var axisWidth = 2.75
+  const axis = new CANNON.Vec3(0, 0, 1)
+
+  octaneRF.scale.set(2, 2, 2)
+  octaneRF.castShadow = true
+  octaneRF.position.x = 4.1
+  octaneRF.position.y = 0.75
+  octaneRF.position.z = 0.6
+  scene.add(octaneRF)
+
+  const octaneRFShape = new CANNON.Sphere(0.35)
+  octaneRFBody = new CANNON.Body({ mass: 1 })
+  octaneRFBody.addShape(octaneRFShape, new CANNON.Vec3(0, 0, 0))
+  octaneRFBody.position.x = octaneRF.position.x
+  octaneRFBody.position.y = octaneRF.position.y
+  octaneRFBody.position.z = octaneRF.position.z
+  world.addBody(octaneRFBody)
+
+  const octaneConstraintRF = new CANNON.HingeConstraint(
+    octaneBody,
+    octaneRFBody,
+    {
+      pivotA: new CANNON.Vec3(1.1, -0.25, 0.6),
+      axisA: axis,
+      pivotB: Vec3.ZERO,
+      axisB: axis,
+    }
+  )
+  world.addConstraint(octaneConstraintRF)
+
+  octaneLF.scale.set(2, 2, 2)
+  octaneLF.castShadow = true
+  octaneLF.position.x = 4.1
+  octaneLF.position.y = 0.75
+  octaneLF.position.z = -0.6
+  scene.add(octaneLF)
+
+  const octaneLFShape = new CANNON.Sphere(0.35)
+  octaneLFBody = new CANNON.Body({ mass: 1 })
+  octaneLFBody.addShape(octaneLFShape, new CANNON.Vec3(0, 0, 0))
+  octaneLFBody.position.x = octaneLF.position.x
+  octaneLFBody.position.y = octaneLF.position.y
+  octaneLFBody.position.z = octaneLF.position.z
+  world.addBody(octaneLFBody)
+
+  const octaneConstraintLF = new CANNON.HingeConstraint(
+    octaneBody,
+    octaneLFBody,
+    {
+      pivotA: new CANNON.Vec3(1.1, -0.25, -0.6),
+      axisA: axis,
+      pivotB: Vec3.ZERO,
+      axisB: axis,
+    }
+  )
+  world.addConstraint(octaneConstraintLF)
+
+  octaneRB.scale.set(2, 2, 2)
+  octaneRB.castShadow = true
+  octaneRB.position.x = 2.5
+  octaneRB.position.y = 0.75
+  octaneRB.position.z = 0.6
+  scene.add(octaneRB)
+
+  const octaneRBShape = new CANNON.Sphere(0.35)
+  octaneRBBody = new CANNON.Body({ mass: 1 })
+  octaneRBBody.addShape(octaneRBShape, new CANNON.Vec3(0, 0, 0))
+  octaneRBBody.position.x = octaneRB.position.x
+  octaneRBBody.position.y = octaneRB.position.y
+  octaneRBBody.position.z = octaneRB.position.z
+  world.addBody(octaneRBBody)
+
+  const octaneConstraintRB = new CANNON.HingeConstraint(
+    octaneBody,
+    octaneRBBody,
+    {
+      pivotA: new CANNON.Vec3(-0.5, -0.25, 0.6),
+      axisA: axis,
+      pivotB: Vec3.ZERO,
+      axisB: axis,
+    }
+  )
+  world.addConstraint(octaneConstraintRB)
+
+  octaneLB.scale.set(2, 2, 2)
+  octaneLB.castShadow = true
+  octaneLB.position.x = 2.5
+  octaneLB.position.y = 0.75
+  octaneLB.position.z = -0.6
+  scene.add(octaneLB)
+
+  const octaneLBShape = new CANNON.Sphere(0.35)
+  octaneLBBody = new CANNON.Body({ mass: 1 })
+  octaneLBBody.addShape(octaneLBShape, new CANNON.Vec3(0, 0, 0))
+  octaneLBBody.position.x = octaneLB.position.x
+  octaneLBBody.position.y = octaneLB.position.y
+  octaneLBBody.position.z = octaneLB.position.z
+  world.addBody(octaneLBBody)
+
+  const octaneConstraintLB = new CANNON.HingeConstraint(
+    octaneBody,
+    octaneLBBody,
+    {
+      pivotA: new CANNON.Vec3(-0.5, -0.25, -0.6),
+      axisA: axis,
+      pivotB: Vec3.ZERO,
+      axisB: axis,
+    }
+  )
+  world.addConstraint(octaneConstraintLB)
+})
+
+const phongMaterial = new THREE.MeshPhongMaterial()
+
+const wheelMaterial = new CANNON.Material('wheelMaterial')
+wheelMaterial.friction = 0.25
+wheelMaterial.restitution = 0.25
 
 const carBodyGeometry: THREE.BoxGeometry = new THREE.BoxGeometry(1, 1, 2)
 const carBodyMesh: THREE.Mesh = new THREE.Mesh(carBodyGeometry, phongMaterial)
@@ -223,16 +612,17 @@ document.addEventListener('keyup', onDocumentKey, false)
 
 window.addEventListener('resize', onWindowResize, false)
 function onWindowResize() {
-  camera.aspect = size.width / size.height
+  camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
-  renderer.setSize(size.width, size.height)
+  renderer.setSize(window.innerWidth, window.innerHeight)
   render()
 }
 
 const clock = new THREE.Clock()
 let delta
 
-// const cannonDebugRenderer = new CannonDebugRenderer(scene, world)
+// @ts-ignore
+const cannonDebugRenderer = new THREE.CannonDebugRenderer(scene, world)
 
 const v = new THREE.Vector3()
 let thrusting = false
@@ -245,7 +635,7 @@ function animate() {
   delta = Math.min(clock.getDelta(), 0.1)
   world.step(delta)
 
-  //   cannonDebugRenderer.update()
+  cannonDebugRenderer.update()
 
   // Copy coordinates from Cannon to Three.js
   if (ball) {
@@ -260,6 +650,81 @@ function animate() {
       ballBody.quaternion.z,
       ballBody.quaternion.w
     )
+  }
+
+  if (octane && octaneBody) {
+    octane.position.set(
+      octaneBody.position.x,
+      octaneBody.position.y,
+      octaneBody.position.z
+    )
+    octane.quaternion.set(
+      octaneBody.quaternion.x,
+      octaneBody.quaternion.y,
+      octaneBody.quaternion.z,
+      octaneBody.quaternion.w
+    )
+    octane.rotateX(-Math.PI / 2)
+  }
+
+  if (octaneRF && octaneRFBody) {
+    octaneRF.position.set(
+      octaneRFBody.position.x,
+      octaneRFBody.position.y,
+      octaneRFBody.position.z
+    )
+    octaneRF.quaternion.set(
+      octaneRFBody.quaternion.x,
+      octaneRFBody.quaternion.y,
+      octaneRFBody.quaternion.z,
+      octaneRFBody.quaternion.w
+    )
+    octaneRF.rotateX(-Math.PI / 2)
+  }
+
+  if (octaneLF && octaneLFBody) {
+    octaneLF.position.set(
+      octaneLFBody.position.x,
+      octaneLFBody.position.y,
+      octaneLFBody.position.z
+    )
+    octaneLF.quaternion.set(
+      octaneLFBody.quaternion.x,
+      octaneLFBody.quaternion.y,
+      octaneLFBody.quaternion.z,
+      octaneLFBody.quaternion.w
+    )
+    octaneLF.rotateX(-Math.PI / 2)
+  }
+
+  if (octaneRB && octaneRBBody) {
+    octaneRB.position.set(
+      octaneRBBody.position.x,
+      octaneRBBody.position.y,
+      octaneRBBody.position.z
+    )
+    octaneRB.quaternion.set(
+      octaneRBBody.quaternion.x,
+      octaneRBBody.quaternion.y,
+      octaneRBBody.quaternion.z,
+      octaneRBBody.quaternion.w
+    )
+    octaneRB.rotateX(-Math.PI / 2)
+  }
+
+  if (octaneLB && octaneLBBody) {
+    octaneLB.position.set(
+      octaneLBBody.position.x,
+      octaneLBBody.position.y,
+      octaneLBBody.position.z
+    )
+    octaneLB.quaternion.set(
+      octaneLBBody.quaternion.x,
+      octaneLBBody.quaternion.y,
+      octaneLBBody.quaternion.z,
+      octaneLBBody.quaternion.w
+    )
+    octaneLB.rotateX(-Math.PI / 2)
   }
 
   carBodyMesh.position.set(
