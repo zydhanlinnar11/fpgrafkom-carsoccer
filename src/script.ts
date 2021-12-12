@@ -20,8 +20,8 @@ light.shadow.camera.left = -100
 light.shadow.camera.right = 100
 scene.add(light)
 
-const helper = new THREE.CameraHelper(light.shadow.camera)
-scene.add(helper)
+// const helper = new THREE.CameraHelper(light.shadow.camera)
+// scene.add(helper)
 
 const size = {
   width: window.innerWidth - 48,
@@ -67,7 +67,10 @@ const grassTexture = new THREE.TextureLoader().load('/grass.jpg')
 grassTexture.wrapS = THREE.RepeatWrapping
 grassTexture.wrapT = THREE.RepeatWrapping
 grassTexture.repeat.set(32, 32)
-const groundGeometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(100, 100)
+const groundGeometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(
+  105 * 1.5,
+  68 * 1.5
+)
 const groundMesh: THREE.Mesh = new THREE.Mesh(
   groundGeometry,
   new THREE.MeshPhongMaterial({ color: 0xffffff, map: grassTexture })
@@ -96,41 +99,27 @@ carBody.position.y = carBodyMesh.position.y
 carBody.position.z = carBodyMesh.position.z
 world.addBody(carBody)
 
-const loader = new GLTFLoader().load('Car/scene.gltf', function (result) {
-  const octane = result.scene.children[0]
-  octane.castShadow = true
-  octane.scale.set(0.025, 0.025, 0.025)
-  octane.traverse((child: Object3DGLTF) => {
-    if (child.isMesh) {
-      child.material.metalness = 0
-      child.castShadow = true
-    }
-  })
-  scene.add(octane)
-  const octaneBodyShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 1))
-  const octaneBody = new CANNON.Body({ mass: 10 })
-  octaneBody.addShape(octaneBodyShape)
-  octaneBody.position.x = octane.position.x
-  octaneBody.position.y = octane.position.y
-  octaneBody.position.z = octane.position.z
-  world.addBody(octaneBody)
+let ball: Object3DGLTF | null = null
+let ballBody: CANNON.Body | null = null
 
-  const nodes = octane.children[0].children[0].children
-  const octaneFL = nodes[0]
-  const octaneFR = nodes[1]
-  const octaneBL = nodes[2]
-  const octaneBR = nodes[3]
-  const octaneWheelRadius = 0.33
-  const octaneWheelMass = 1
+const loader = new GLTFLoader().load('/Ball/scene.gltf', function (result) {
+  ball = result.scene.children[0] as Object3DGLTF
+  ball.scale.set(1.5, 1.5, 1.5)
+  ball.castShadow = true
+  ball.position.x = 0
+  ball.position.y = 1.5
+  ball.position.z = -5
+  scene.add(ball)
 
-  // front left
-  const octaneFLShape = new CANNON.Sphere(octaneWheelRadius)
-  const wheelLFBody = new CANNON.Body({
-    mass: octaneWheelMass,
-  })
-
-  //   octaneFR.rotateZ(Math.PI/2)
+  const ballShape = new CANNON.Sphere(1.5)
+  ballBody = new CANNON.Body({ mass: 0.1 })
+  ballBody.addShape(ballShape)
+  ballBody.position.x = ball.position.x
+  ballBody.position.y = ball.position.y
+  ballBody.position.z = ball.position.z
+  world.addBody(ballBody)
 })
+const wheelMass = 1
 
 //front left wheel
 const wheelLFGeometry: THREE.CylinderGeometry = new THREE.CylinderGeometry(
@@ -146,7 +135,10 @@ wheelLFMesh.position.z = -1
 wheelLFMesh.castShadow = true
 scene.add(wheelLFMesh)
 const wheelLFShape = new CANNON.Sphere(0.33)
-const wheelLFBody = new CANNON.Body({ mass: 1, material: wheelMaterial })
+const wheelLFBody = new CANNON.Body({
+  mass: wheelMass,
+  material: wheelMaterial,
+})
 wheelLFBody.addShape(wheelLFShape)
 wheelLFBody.position.x = wheelLFMesh.position.x
 wheelLFBody.position.y = wheelLFMesh.position.y
@@ -167,7 +159,10 @@ wheelRFMesh.position.z = -1
 wheelRFMesh.castShadow = true
 scene.add(wheelRFMesh)
 const wheelRFShape = new CANNON.Sphere(0.33)
-const wheelRFBody = new CANNON.Body({ mass: 1, material: wheelMaterial })
+const wheelRFBody = new CANNON.Body({
+  mass: wheelMass,
+  material: wheelMaterial,
+})
 wheelRFBody.addShape(wheelRFShape)
 wheelRFBody.position.x = wheelRFMesh.position.x
 wheelRFBody.position.y = wheelRFMesh.position.y
@@ -188,7 +183,10 @@ wheelLBMesh.position.z = 1
 wheelLBMesh.castShadow = true
 scene.add(wheelLBMesh)
 const wheelLBShape = new CANNON.Sphere(0.4)
-const wheelLBBody = new CANNON.Body({ mass: 1, material: wheelMaterial })
+const wheelLBBody = new CANNON.Body({
+  mass: wheelMass,
+  material: wheelMaterial,
+})
 wheelLBBody.addShape(wheelLBShape)
 wheelLBBody.position.x = wheelLBMesh.position.x
 wheelLBBody.position.y = wheelLBMesh.position.y
@@ -209,7 +207,10 @@ wheelRBMesh.position.z = 1
 wheelRBMesh.castShadow = true
 scene.add(wheelRBMesh)
 const wheelRBShape = new CANNON.Sphere(0.4)
-const wheelRBBody = new CANNON.Body({ mass: 1, material: wheelMaterial })
+const wheelRBBody = new CANNON.Body({
+  mass: wheelMass,
+  material: wheelMaterial,
+})
 wheelRBBody.addShape(wheelRBShape)
 wheelRBBody.position.x = wheelRBMesh.position.x
 wheelRBBody.position.y = wheelRBMesh.position.y
@@ -280,7 +281,7 @@ let thrusting = false
 function animate() {
   requestAnimationFrame(animate)
 
-  helper.update()
+  // helper.update()
 
   delta = Math.min(clock.getDelta(), 0.1)
   world.step(delta)
@@ -288,6 +289,20 @@ function animate() {
   //   cannonDebugRenderer.update()
 
   // Copy coordinates from Cannon to Three.js
+  if (ball) {
+    ball.position.set(
+      ballBody.position.x,
+      ballBody.position.y,
+      ballBody.position.z
+    )
+    ball.quaternion.set(
+      ballBody.quaternion.x,
+      ballBody.quaternion.y,
+      ballBody.quaternion.z,
+      ballBody.quaternion.w
+    )
+  }
+
   carBodyMesh.position.set(
     carBody.position.x,
     carBody.position.y,
