@@ -271,9 +271,9 @@ const camera = new THREE.PerspectiveCamera(
   1000
 )
 const chaseCam = new THREE.Object3D()
-chaseCam.position.set(0, 1, 3)
+chaseCam.position.set(3, 0, 0)
 const chaseCamPivot = new THREE.Object3D()
-chaseCamPivot.position.set(0, 2, 4)
+chaseCamPivot.position.set(-8, 0, 4)
 chaseCam.add(chaseCamPivot)
 scene.add(chaseCam)
 
@@ -329,6 +329,7 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
   octane.position.y = 1
   octane.position.z = 0
   scene.add(octane)
+  octane.add(chaseCam)
 
   const octaneShape = new CANNON.Box(new CANNON.Vec3(1.1, 0.3125, 0.375))
   octaneBody = new CANNON.Body({ mass: 1 })
@@ -445,7 +446,7 @@ const carBodyMesh: THREE.Mesh = new THREE.Mesh(carBodyGeometry, phongMaterial)
 carBodyMesh.position.y = 3
 carBodyMesh.castShadow = true
 scene.add(carBodyMesh)
-carBodyMesh.add(chaseCam)
+// carBodyMesh.add(chaseCam)
 
 const carBodyShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 1))
 const carBody = new CANNON.Body({ mass: 10 })
@@ -780,6 +781,8 @@ function animate() {
   octaneLFConstraint.axisA.set(0, 0, octaneRFConstraint.axisA.z)
   if (keyMap['w'] || keyMap['ArrowUp']) {
     if (forwardVelocity < 100.0) forwardVelocity += 1
+    octaneLBBody.torque.vadd(new Vec3(0, 0, -20), octaneLBBody.torque)
+    octaneRBBody.torque.vadd(new Vec3(0, 0, -20), octaneRBBody.torque)
     thrusting = true
   }
   if (keyMap['s'] || keyMap['ArrowDown']) {
@@ -820,7 +823,7 @@ function animate() {
   constraintLF.axisA.z = rightVelocity
   constraintRF.axisA.z = rightVelocity
 
-  camera.lookAt(carBodyMesh.position)
+  camera.lookAt(octane.position)
 
   chaseCamPivot.getWorldPosition(v)
   if (v.y < 1) {
