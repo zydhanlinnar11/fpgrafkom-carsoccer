@@ -6,6 +6,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import Object3DGLTF from './interface/Object3DGLTF'
 import createWall from './wall'
 import createPlane, { PlaneSize } from './plane'
+import spawnBall from './ball'
 
 const scene = new THREE.Scene()
 const planeSize: PlaneSize = { width: 157.5, height: 102 }
@@ -14,17 +15,6 @@ const light = new THREE.PointLight(0xffffff, 1.4)
 light.position.set(0, 50, 0)
 scene.add(light)
 light.castShadow = true
-// light.shadow.mapSize.width = 16384
-// light.shadow.mapSize.height = 16384
-// light.shadow.camera.near = 0.5
-// light.shadow.camera.far = 100
-// light.shadow.camera.top = 100
-// light.shadow.camera.bottom = -100
-// light.shadow.camera.left = -100
-// light.shadow.camera.right = 100
-
-// const helper = new THREE.CameraHelper(light.shadow.camera)
-// scene.add(helper)
 
 const size = {
   width: window.innerWidth - 48,
@@ -63,8 +53,15 @@ wheelMaterial.restitution = 0.25
 
 //ground
 
+let ball: Object3DGLTF | null = null
+let ballBody: CANNON.Body | null = null
+
 createPlane(scene, world, planeSize)
 createWall(scene, world, planeSize)
+spawnBall(scene, world, (retBall: Object3DGLTF, retBallBody: CANNON.Body) => {
+  ball = retBall
+  ballBody = retBallBody
+})
 
 const carBodyGeometry: THREE.BoxGeometry = new THREE.BoxGeometry(1, 1, 2)
 const carBodyMesh: THREE.Mesh = new THREE.Mesh(carBodyGeometry, phongMaterial)
@@ -81,26 +78,6 @@ carBody.position.y = carBodyMesh.position.y
 carBody.position.z = carBodyMesh.position.z
 world.addBody(carBody)
 
-let ball: Object3DGLTF | null = null
-let ballBody: CANNON.Body | null = null
-
-const loader = new GLTFLoader().load('/Ball/scene.gltf', function (result) {
-  ball = result.scene.children[0] as Object3DGLTF
-  ball.scale.set(1.5, 1.5, 1.5)
-  ball.castShadow = true
-  ball.position.x = 0
-  ball.position.y = 1.5
-  ball.position.z = -5
-  scene.add(ball)
-
-  const ballShape = new CANNON.Sphere(1.5)
-  ballBody = new CANNON.Body({ mass: 0.0000000001 })
-  ballBody.addShape(ballShape)
-  ballBody.position.x = ball.position.x
-  ballBody.position.y = ball.position.y
-  ballBody.position.z = ball.position.z
-  world.addBody(ballBody)
-})
 const wheelMass = 1
 
 //front left wheel
