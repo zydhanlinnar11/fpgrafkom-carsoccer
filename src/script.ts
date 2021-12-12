@@ -4,21 +4,24 @@ import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from './utils/cannonDebugRenderer'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import Object3DGLTF from './interface/Object3DGLTF'
+import createWall from './wall'
+import createPlane, { PlaneSize } from './plane'
 
 const scene = new THREE.Scene()
+const planeSize: PlaneSize = { width: 157.5, height: 102 }
 
-const light = new THREE.DirectionalLight()
-light.position.set(25, 50, 25)
-light.castShadow = true
-light.shadow.mapSize.width = 16384
-light.shadow.mapSize.height = 16384
-light.shadow.camera.near = 0.5
-light.shadow.camera.far = 100
-light.shadow.camera.top = 100
-light.shadow.camera.bottom = -100
-light.shadow.camera.left = -100
-light.shadow.camera.right = 100
+const light = new THREE.PointLight(0xffffff, 1.4)
+light.position.set(0, 50, 0)
 scene.add(light)
+light.castShadow = true
+// light.shadow.mapSize.width = 16384
+// light.shadow.mapSize.height = 16384
+// light.shadow.camera.near = 0.5
+// light.shadow.camera.far = 100
+// light.shadow.camera.top = 100
+// light.shadow.camera.bottom = -100
+// light.shadow.camera.left = -100
+// light.shadow.camera.right = 100
 
 // const helper = new THREE.CameraHelper(light.shadow.camera)
 // scene.add(helper)
@@ -54,35 +57,14 @@ const phongMaterial = new THREE.MeshPhongMaterial()
 const world = new CANNON.World()
 world.gravity.set(0, -9.82, 0)
 
-const groundMaterial = new CANNON.Material('groundMaterial')
-groundMaterial.friction = 0.25
-groundMaterial.restitution = 0.25
-
 const wheelMaterial = new CANNON.Material('wheelMaterial')
 wheelMaterial.friction = 0.25
 wheelMaterial.restitution = 0.25
 
 //ground
-const grassTexture = new THREE.TextureLoader().load('/grass.jpg')
-grassTexture.wrapS = THREE.RepeatWrapping
-grassTexture.wrapT = THREE.RepeatWrapping
-grassTexture.repeat.set(32, 32)
-const groundGeometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(
-  105 * 1.5,
-  68 * 1.5
-)
-const groundMesh: THREE.Mesh = new THREE.Mesh(
-  groundGeometry,
-  new THREE.MeshPhongMaterial({ color: 0xffffff, map: grassTexture })
-)
-groundMesh.rotateX(-Math.PI / 2)
-groundMesh.receiveShadow = true
-scene.add(groundMesh)
-const groundShape = new CANNON.Box(new CANNON.Vec3(50, 1, 50))
-const groundBody = new CANNON.Body({ mass: 0, material: groundMaterial })
-groundBody.addShape(groundShape)
-groundBody.position.set(0, -1, 0)
-world.addBody(groundBody)
+
+createPlane(scene, world, planeSize)
+createWall(scene, world, planeSize)
 
 const carBodyGeometry: THREE.BoxGeometry = new THREE.BoxGeometry(1, 1, 2)
 const carBodyMesh: THREE.Mesh = new THREE.Mesh(carBodyGeometry, phongMaterial)
