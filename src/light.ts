@@ -1,8 +1,11 @@
 import * as THREE from 'three'
 
-export default function createLight(scene: THREE.Scene) {
+export default function createLight(
+  scene: THREE.Scene,
+  pos: { x: number; y: number; z: number }
+) {
   const light = new THREE.PointLight(0xffffff, 1.4)
-  light.position.set(0, 50, 0)
+  light.position.set(pos.x, pos.y, pos.z)
   light.castShadow = true
   scene.add(light)
 
