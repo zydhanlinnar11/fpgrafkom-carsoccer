@@ -9,6 +9,11 @@ export function createWall(
   pos: { x: number; y: number; z: number },
   color: THREE.ColorRepresentation = 0xffffff
 ) {
+  const brickTexture = new THREE.TextureLoader().load('/brick.jpg')
+  brickTexture.wrapS = THREE.RepeatWrapping
+  brickTexture.wrapT = THREE.RepeatWrapping
+  // brickTexture.repeat.set(32, 32)
+
   const wallGeometry: THREE.PlaneGeometry = new THREE.BoxGeometry(
     size.x,
     size.y,
@@ -16,7 +21,7 @@ export function createWall(
   )
   const wallMesh: THREE.Mesh = new THREE.Mesh(
     wallGeometry,
-    new THREE.MeshPhongMaterial({ color })
+    new THREE.MeshPhongMaterial({ color, map: brickTexture })
   )
   wallMesh.position.set(pos.x, pos.y, pos.z)
   const wall = new CANNON.Body({ mass: 0 })
