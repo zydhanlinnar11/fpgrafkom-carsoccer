@@ -15,7 +15,7 @@ const planeSize: PlaneSize = { width: 157.5, height: 102 }
 
 const camera = new THREE.PerspectiveCamera(
   75,
-  (window.innerWidth - 40) / (window.innerHeight - 40),
+  window.innerWidth / window.innerHeight,
   0.1,
   1000
 )
@@ -24,7 +24,7 @@ const { chaseCam, chaseCamPivot } = createChaseCam(scene)
 const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector('.webgl'),
 })
-renderer.setSize(window.innerWidth - 40, window.innerHeight - 40)
+renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
 const world = new CANNON.World()
@@ -129,9 +129,9 @@ document.addEventListener('keyup', onDocumentKey, false)
 
 window.addEventListener('resize', onWindowResize, false)
 function onWindowResize() {
-  camera.aspect = (window.innerWidth - 40) / (window.innerHeight - 40)
+  camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
-  renderer.setSize(window.innerWidth - 40, window.innerHeight - 40)
+  renderer.setSize(window.innerWidth, window.innerHeight)
   render()
 }
 
