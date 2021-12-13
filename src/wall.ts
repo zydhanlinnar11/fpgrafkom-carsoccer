@@ -12,7 +12,6 @@ export function createWall(
   const brickTexture = new THREE.TextureLoader().load('/brick.jpg')
   brickTexture.wrapS = THREE.RepeatWrapping
   brickTexture.wrapT = THREE.RepeatWrapping
-  // brickTexture.repeat.set(32, 32)
 
   const wallGeometry: THREE.PlaneGeometry = new THREE.BoxGeometry(
     size.x,
