@@ -203,12 +203,24 @@ function animate() {
     vehicle.applyWheelForce(0, 2)
     vehicle.applyWheelForce(0, 3)
     if (keyMap['w'] || keyMap['ArrowUp']) {
-      vehicle.applyWheelForce(-maxForce, 2)
-      vehicle.applyWheelForce(-maxForce, 3)
+      vehicle.applyWheelForce(
+        Math.abs(vehicle.getWheelSpeed(2)) < 26.25 ? -maxForce : 0,
+        2
+      )
+      vehicle.applyWheelForce(
+        Math.abs(vehicle.getWheelSpeed(3)) < 26.25 ? -maxForce : 0,
+        3
+      )
     }
     if (keyMap['s'] || keyMap['ArrowDown']) {
-      vehicle.applyWheelForce(maxForce, 2)
-      vehicle.applyWheelForce(maxForce, 3)
+      vehicle.applyWheelForce(
+        Math.abs(vehicle.getWheelSpeed(2)) < 26.25 ? maxForce / 2 : 0,
+        2
+      )
+      vehicle.applyWheelForce(
+        Math.abs(vehicle.getWheelSpeed(3)) < 26.25 ? maxForce / 2 : 0,
+        3
+      )
     }
     if (keyMap['a'] || keyMap['ArrowLeft']) {
       vehicle.setSteeringValue(maxSteerVal, 0)
