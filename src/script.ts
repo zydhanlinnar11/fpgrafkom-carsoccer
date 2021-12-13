@@ -6,6 +6,9 @@ import Object3DGLTF from './interface/Object3DGLTF'
 import createWall from './wall'
 import createPlane, { PlaneSize } from './plane'
 import spawnBall from './ball'
+import createLight from './light'
+import createChaseCam from './chaseCam'
+import { Vec3 } from 'cannon-es'
 
 /**
  * Adds Three.js primitives into the scene where all the Cannon bodies and shapes are.
@@ -258,36 +261,26 @@ THREE.CannonDebugRenderer.prototype = {
 const scene = new THREE.Scene()
 const planeSize: PlaneSize = { width: 157.5, height: 102 }
 
-const light = new THREE.PointLight(0xffffff, 1.4)
-light.position.set(0, 50, 0)
-scene.add(light)
-light.castShadow = true
+const light = createLight(scene)
 
 const camera = new THREE.PerspectiveCamera(
   75,
-  window.innerWidth / window.innerHeight,
+  (window.innerWidth - 40) / (window.innerHeight - 40),
   0.1,
   1000
 )
-const chaseCam = new THREE.Object3D()
-chaseCam.position.set(3, 0, 0)
-const chaseCamPivot = new THREE.Object3D()
-chaseCamPivot.position.set(-8, 0, 4)
-chaseCam.add(chaseCamPivot)
-scene.add(chaseCam)
+const { chaseCam, chaseCamPivot } = createChaseCam(scene)
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector('.webgl'),
 })
-renderer.setSize(window.innerWidth, window.innerHeight)
+renderer.setSize(window.innerWidth - 40, window.innerHeight - 40)
 // renderer.shadowMap.enabled = true
 // renderer.shadowMap.type = THREE.PCFSoftShadowMap
 document.body.appendChild(renderer.domElement)
 
 const world = new CANNON.World()
 world.gravity.set(0, -9.82, 0)
-
-//ground
 
 let ball: Object3DGLTF | null = null
 let ballBody: CANNON.Body | null = null
@@ -300,167 +293,89 @@ spawnBall(scene, world, (retBall: Object3DGLTF, retBallBody: CANNON.Body) => {
 })
 
 let octane: Object3DGLTF | null = null
-let octaneBody: CANNON.Body | null = null
-let octaneRF: Object3DGLTF | null = null
-let octaneRFBody: CANNON.Body | null = null
-let octaneLF: Object3DGLTF | null = null
-let octaneLFBody: CANNON.Body | null = null
-let octaneRB: Object3DGLTF | null = null
-let octaneRBBody: CANNON.Body | null = null
-let octaneLB: Object3DGLTF | null = null
-let octaneLBBody: CANNON.Body | null = null
+let wheels: Object3DGLTF[] | null = [] as Object3DGLTF[]
 let vehicle: CANNON.RigidVehicle | null = null
 
 new GLTFLoader().load('/Car/scene.gltf', function (result) {
   const nodes = result.scene.children[0].children[0].children[0].children
   octane = nodes[0] as Object3DGLTF
-  octaneRF = nodes[1] as Object3DGLTF
-  octaneLF = nodes[2] as Object3DGLTF
-  octaneRB = nodes[3] as Object3DGLTF
-  octaneLB = nodes[4] as Object3DGLTF
+  for (let i = 1; i < nodes.length; i++) {
+    nodes[i].scale.set(2, 2, 2)
+    nodes[i].castShadow = true
+    wheels.push(nodes[i] as Object3DGLTF)
+  }
 
   octane.scale.set(2, 2, 2)
   octane.castShadow = true
-  octane.position.x = -3
-  octane.position.y = 1
-  octane.position.z = 0
+  octane.position.set(-3, 1, 0)
   scene.add(octane)
   octane.add(chaseCam)
 
   const octaneShape = new CANNON.Box(new CANNON.Vec3(1.1, 0.3125, 0.375))
-  octaneBody = new CANNON.Body({ mass: 1 })
+  const octaneBody = new CANNON.Body({ mass: 1 })
   octaneBody.addShape(octaneShape, new CANNON.Vec3(0, 0.418, 0))
-  octaneBody.position.x = octane.position.x
-  octaneBody.position.y = octane.position.y
-  octaneBody.position.z = octane.position.z
+  octaneBody.position.set(
+    octane.position.x,
+    octane.position.y,
+    octane.position.z
+  )
 
   vehicle = new CANNON.RigidVehicle({
     chassisBody: octaneBody,
   })
-  // vehicle.addToWorld(world)
   world.addBody(vehicle.chassisBody)
 
-  var axisWidth = 2.75
   const axis = new CANNON.Vec3(0, 0, 1)
-
-  octaneRF.scale.set(2, 2, 2)
-  octaneRF.castShadow = true
-  octaneRF.position.x = -1.9
-  octaneRF.position.y = 0.75
-  octaneRF.position.z = 0.6
-  scene.add(octaneRF)
   const down = new CANNON.Vec3(0, 0, -1)
-
   const quat = new CANNON.Quaternion()
   const translation = new CANNON.Vec3(0, 0, 0)
   quat.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
 
-  const octaneRFShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
-  octaneRFShape.transformAllPoints(translation, quat)
-  octaneRFBody = new CANNON.Body({ mass: 1 })
-  octaneRFBody.addShape(octaneRFShape, new CANNON.Vec3(0, 0, 0))
-  octaneRFBody.position.x = octaneRF.position.x
-  octaneRFBody.position.y = octaneRF.position.y
-  octaneRFBody.position.z = octaneRF.position.z
-  vehicle.addWheel({
-    body: octaneRFBody,
-    position: new CANNON.Vec3(1.1, -0.25, 0.6),
-    axis: new CANNON.Vec3(0, 0, 1),
-    direction: down,
-  })
+  wheels[0].position.set(-1.9, 0.75, 0.6)
+  wheels[1].position.set(-1.9, 0.75, -0.6)
+  wheels[2].position.set(-3.5, 0.75, 0.6)
+  wheels[3].position.set(-3.5, 0.75, -0.6)
 
-  world.addBody(vehicle.wheelBodies[0])
-  world.addConstraint(vehicle.constraints[0])
+  for (let i = 0; i < wheels.length; i++) {
+    scene.add(wheels[i])
+    const wheelShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
+    wheelShape.transformAllPoints(translation, quat)
+    const wheelBody = new CANNON.Body({ mass: 1 })
+    wheelBody.addShape(wheelShape, new CANNON.Vec3(0, 0, 0))
+    wheelBody.position.set(
+      wheels[i].position.x,
+      wheels[i].position.y,
+      wheels[i].position.z
+    )
+    vehicle.addWheel({
+      body: wheelBody,
+      position: new CANNON.Vec3(
+        wheels[i].position.x - octane.position.x,
+        wheels[i].position.y - octane.position.y,
+        (wheels[i].position.z - octane.position.z) * (i <= 1 ? 1 : -1)
+      ),
+      axis,
+      direction: down,
+    })
 
-  octaneLF.scale.set(2, 2, 2)
-  octaneLF.castShadow = true
-  octaneLF.position.x = -1.9
-  octaneLF.position.y = 0.75
-  octaneLF.position.z = -0.6
-  scene.add(octaneLF)
-
-  const octaneLFShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
-  octaneLFShape.transformAllPoints(translation, quat)
-  octaneLFBody = new CANNON.Body({ mass: 1 })
-  octaneLFBody.addShape(octaneLFShape, new CANNON.Vec3(0, 0, 0))
-  octaneLFBody.position.x = octaneLF.position.x
-  octaneLFBody.position.y = octaneLF.position.y
-  octaneLFBody.position.z = octaneLF.position.z
-  vehicle.addWheel({
-    body: octaneLFBody,
-    position: new CANNON.Vec3(1.1, -0.25, -0.6),
-    axis: axis,
-    direction: down,
-  })
-
-  world.addBody(vehicle.wheelBodies[1])
-  world.addConstraint(vehicle.constraints[1])
-
-  octaneRB.scale.set(2, 2, 2)
-  octaneRB.castShadow = true
-  octaneRB.position.x = -3.5
-  octaneRB.position.y = 0.75
-  octaneRB.position.z = 0.6
-  scene.add(octaneRB)
-
-  const octaneRBShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
-  octaneRBShape.transformAllPoints(translation, quat)
-  octaneRBBody = new CANNON.Body({ mass: 1 })
-  octaneRBBody.addShape(octaneRBShape, new CANNON.Vec3(0, 0, 0))
-  octaneRBBody.position.x = octaneRB.position.x
-  octaneRBBody.position.y = octaneRB.position.y
-  octaneRBBody.position.z = octaneRB.position.z
-  vehicle.addWheel({
-    body: octaneRBBody,
-    position: new CANNON.Vec3(-0.5, -0.25, 0.6),
-    axis: new CANNON.Vec3(0, 0, 1),
-    direction: down,
-  })
-
-  world.addBody(vehicle.wheelBodies[2])
-  world.addConstraint(vehicle.constraints[2])
-
-  octaneLB.scale.set(2, 2, 2)
-  octaneLB.castShadow = true
-  octaneLB.position.x = -3.5
-  octaneLB.position.y = 0.75
-  octaneLB.position.z = -0.6
-  scene.add(octaneLB)
-
-  const octaneLBShape = new CANNON.Cylinder(0.35, 0.35, 0.5, 100)
-  octaneLBShape.transformAllPoints(translation, quat)
-  octaneLBBody = new CANNON.Body({ mass: 1 })
-  octaneLBBody.addShape(octaneLBShape, new CANNON.Vec3(0, 0, 0))
-  octaneLBBody.position.x = octaneLB.position.x
-  octaneLBBody.position.y = octaneLB.position.y
-  octaneLBBody.position.z = octaneLB.position.z
-  vehicle.addWheel({
-    body: octaneLBBody,
-    position: new CANNON.Vec3(-0.5, -0.25, -0.6),
-    axis: axis,
-    direction: down,
-  })
-
-  world.addBody(vehicle.wheelBodies[3])
-  world.addConstraint(vehicle.constraints[3])
-  for (var i = 0; i < vehicle.wheelBodies.length; i++) {
-    vehicle.wheelBodies[i].angularDamping = 0.1
+    world.addBody(vehicle.wheelBodies[i])
+    world.addConstraint(vehicle.constraints[i])
+    vehicle.wheelBodies[i].angularDamping = 0.3
   }
 })
 
 const keyMap: { [id: string]: boolean } = {}
-const onDocumentKey = (e: KeyboardEvent) => {
-  keyMap[e.key] = e.type === 'keydown'
-}
+const onDocumentKey = (e: KeyboardEvent) =>
+  (keyMap[e.key] = e.type === 'keydown')
 
 document.addEventListener('keydown', onDocumentKey, false)
 document.addEventListener('keyup', onDocumentKey, false)
 
 window.addEventListener('resize', onWindowResize, false)
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight
+  camera.aspect = (window.innerWidth - 40) / (window.innerHeight - 40)
   camera.updateProjectionMatrix()
-  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setSize(window.innerWidth - 40, window.innerHeight - 40)
   render()
 }
 
@@ -471,7 +386,6 @@ let delta
 const cannonDebugRenderer = new THREE.CannonDebugRenderer(scene, world)
 
 const v = new THREE.Vector3()
-let thrusting = false
 
 function animate() {
   requestAnimationFrame(animate)
@@ -498,82 +412,38 @@ function animate() {
     )
   }
 
-  if (octane && vehicle.chassisBody) {
+  if (octane && vehicle?.chassisBody) {
     octane.position.set(
-      octaneBody.position.x,
-      octaneBody.position.y,
-      octaneBody.position.z
+      vehicle.chassisBody.position.x,
+      vehicle.chassisBody.position.y,
+      vehicle.chassisBody.position.z
     )
     octane.quaternion.set(
-      octaneBody.quaternion.x,
-      octaneBody.quaternion.y,
-      octaneBody.quaternion.z,
-      octaneBody.quaternion.w
+      vehicle.chassisBody.quaternion.x,
+      vehicle.chassisBody.quaternion.y,
+      vehicle.chassisBody.quaternion.z,
+      vehicle.chassisBody.quaternion.w
     )
     octane.rotateX(-Math.PI / 2)
   }
 
-  if (octaneRF && octaneRFBody) {
-    octaneRF.position.set(
-      octaneRFBody.position.x,
-      octaneRFBody.position.y,
-      octaneRFBody.position.z
-    )
-    octaneRF.quaternion.set(
-      octaneRFBody.quaternion.x,
-      octaneRFBody.quaternion.y,
-      octaneRFBody.quaternion.z,
-      octaneRFBody.quaternion.w
-    )
-    octaneRF.rotateX(-Math.PI / 2)
+  for (let i = 0; wheels && i < wheels.length; i++) {
+    if (wheels[i] && vehicle?.wheelBodies?.[i]) {
+      wheels[i].position.set(
+        vehicle.wheelBodies[i].position.x,
+        vehicle.wheelBodies[i].position.y,
+        vehicle.wheelBodies[i].position.z
+      )
+      wheels[i].quaternion.set(
+        vehicle.wheelBodies[i].quaternion.x,
+        vehicle.wheelBodies[i].quaternion.y,
+        vehicle.wheelBodies[i].quaternion.z,
+        vehicle.wheelBodies[i].quaternion.w
+      )
+      wheels[i].rotateX(-Math.PI / 2)
+    }
   }
 
-  if (octaneLF && octaneLFBody) {
-    octaneLF.position.set(
-      octaneLFBody.position.x,
-      octaneLFBody.position.y,
-      octaneLFBody.position.z
-    )
-    octaneLF.quaternion.set(
-      octaneLFBody.quaternion.x,
-      octaneLFBody.quaternion.y,
-      octaneLFBody.quaternion.z,
-      octaneLFBody.quaternion.w
-    )
-    octaneLF.rotateX(-Math.PI / 2)
-  }
-
-  if (octaneRB && octaneRBBody) {
-    octaneRB.position.set(
-      octaneRBBody.position.x,
-      octaneRBBody.position.y,
-      octaneRBBody.position.z
-    )
-    octaneRB.quaternion.set(
-      octaneRBBody.quaternion.x,
-      octaneRBBody.quaternion.y,
-      octaneRBBody.quaternion.z,
-      octaneRBBody.quaternion.w
-    )
-    octaneRB.rotateX(-Math.PI / 2)
-  }
-
-  if (octaneLB && octaneLBBody) {
-    octaneLB.position.set(
-      octaneLBBody.position.x,
-      octaneLBBody.position.y,
-      octaneLBBody.position.z
-    )
-    octaneLB.quaternion.set(
-      octaneLBBody.quaternion.x,
-      octaneLBBody.quaternion.y,
-      octaneLBBody.quaternion.z,
-      octaneLBBody.quaternion.w
-    )
-    octaneLB.rotateX(-Math.PI / 2)
-  }
-
-  thrusting = false
   const maxSteerVal = Math.PI / 16
   const maxForce = 10
   if (vehicle) {
@@ -581,49 +451,25 @@ function animate() {
     vehicle.setSteeringValue(0, 1)
     vehicle.applyWheelForce(0, 2)
     vehicle.applyWheelForce(0, 3)
-  }
-  // octaneRFConstraint.axisA.set(0, 0, octaneRFConstraint.axisA.z)
-  // octaneLFConstraint.axisA.set(0, 0, octaneRFConstraint.axisA.z)
-  if (keyMap['w'] || keyMap['ArrowUp']) {
-    thrusting = true
-    if (vehicle) {
+    if (keyMap['w'] || keyMap['ArrowUp']) {
       vehicle.applyWheelForce(-maxForce, 2)
       vehicle.applyWheelForce(-maxForce, 3)
-      // let torque = new Vec3()
-      // vehicle.wheelAxes[0].scale(100, torque)
-      // vehicle.wheelBodies[0].vectorToWorldFrame(torque, torque)
-
-      // vehicle.wheelBodies[0].torque.vadd(torque, vehicle.wheelBodies[0].torque)
-      // console.log(torque)
     }
-  }
-  if (keyMap['s'] || keyMap['ArrowDown']) {
-    thrusting = true
-    if (vehicle) {
+    if (keyMap['s'] || keyMap['ArrowDown']) {
       vehicle.applyWheelForce(maxForce, 2)
       vehicle.applyWheelForce(maxForce, 3)
     }
-  }
-  if (keyMap['a'] || keyMap['ArrowLeft']) {
-    if (vehicle) {
+    if (keyMap['a'] || keyMap['ArrowLeft']) {
       vehicle.setSteeringValue(maxSteerVal, 0)
       vehicle.setSteeringValue(maxSteerVal, 1)
     }
-  }
-  if (keyMap['d'] || keyMap['ArrowRight']) {
-    if (vehicle) {
+    if (keyMap['d'] || keyMap['ArrowRight']) {
       vehicle.setSteeringValue(-maxSteerVal, 0)
       vehicle.setSteeringValue(-maxSteerVal, 1)
     }
-  }
-  if (keyMap[' ']) {
-  }
 
-  if (!thrusting) {
-    //not going forward or backwards so gradually slow down
+    camera.lookAt(octane.position)
   }
-
-  if (octane) camera.lookAt(octane.position)
 
   chaseCamPivot.getWorldPosition(v)
   if (v.y < 1) {
