@@ -15,7 +15,7 @@ export default function createPlane(
   groundMaterial.friction = 0.25
   groundMaterial.restitution = 0.25
 
-  const grassTexture = new THREE.TextureLoader().load('/grass.jpg')
+  const grassTexture = new THREE.TextureLoader().load('/grass.webp')
   grassTexture.wrapS = THREE.RepeatWrapping
   grassTexture.wrapT = THREE.RepeatWrapping
   grassTexture.repeat.set(32, 32)

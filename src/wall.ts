@@ -9,7 +9,7 @@ export function createWall(
   pos: { x: number; y: number; z: number },
   color: THREE.ColorRepresentation = 0xffffff
 ) {
-  const brickTexture = new THREE.TextureLoader().load('/brick.jpg')
+  const brickTexture = new THREE.TextureLoader().load('/brick.webp')
   brickTexture.wrapS = THREE.RepeatWrapping
   brickTexture.wrapT = THREE.RepeatWrapping
 
