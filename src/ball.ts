@@ -10,6 +10,7 @@ export default function spawnBall(
 ) {
   new GLTFLoader().load('/Ball/scene.gltf', function (result) {
     const ball = result.scene.children[0] as Object3DGLTF
+    console.log(ball.scale)
     ball.scale.set(1.5, 1.5, 1.5)
     ball.castShadow = true
     ball.position.x = 0
