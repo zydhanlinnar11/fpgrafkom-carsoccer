@@ -11,7 +11,11 @@ import cannonDebugger from 'cannon-es-debugger'
 const DEBUG = false
 
 const scene = new THREE.Scene()
-const planeSize: PlaneSize = { width: 157.5, height: 102 }
+const sizeFactor = 0.6
+const planeSize: PlaneSize = {
+  width: 105 * sizeFactor,
+  height: 68 * sizeFactor,
+}
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -55,6 +59,11 @@ let vehicle: CANNON.RigidVehicle | null = null
 new GLTFLoader().load('/Car/scene.gltf', function (result) {
   const nodes = result.scene.children[0].children[0].children[0].children
   octane = nodes[0] as Object3DGLTF
+  octane.traverse((child: Object3DGLTF) => {
+    if (child.isMesh) {
+      child.material.metalness = 0
+    }
+  })
   for (let i = 1; i < nodes.length; i++) {
     nodes[i].scale.set(2, 2, 2)
     nodes[i].castShadow = true
@@ -94,7 +103,7 @@ new GLTFLoader().load('/Car/scene.gltf', function (result) {
 
   for (let i = 0; i < wheels.length; i++) {
     scene.add(wheels[i])
-    const wheelShape = new CANNON.Cylinder(0.35, 0.35, 0.35, 100)
+    const wheelShape = new CANNON.Cylinder(0.35, 0.35, 0.35, 200)
     wheelShape.transformAllPoints(translation, quat)
     const wheelBody = new CANNON.Body({ mass: 1 })
     wheelBody.addShape(wheelShape, new CANNON.Vec3(0, 0, 0))
