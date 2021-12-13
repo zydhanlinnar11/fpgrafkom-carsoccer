@@ -8,6 +8,7 @@ import spawnBall from './ball'
 import createLight from './light'
 import createChaseCam from './chaseCam'
 import cannonDebugger from 'cannon-es-debugger'
+const DEBUG = false
 
 const scene = new THREE.Scene()
 const planeSize: PlaneSize = { width: 157.5, height: 102 }
@@ -137,7 +138,7 @@ function onWindowResize() {
 const clock = new THREE.Clock()
 let delta
 
-cannonDebugger(scene, world.bodies)
+if (DEBUG) cannonDebugger(scene, world.bodies)
 
 const v = new THREE.Vector3()
 
