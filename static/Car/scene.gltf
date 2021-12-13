@@ -895,10 +895,10 @@
   ],
   "images": [
     {
-      "uri": "textures/Octane_Chassis_baseColor.png"
+      "uri": "textures/Octane_Chassis_baseColor.webp"
     },
     {
-      "uri": "textures/Octane_Chassis_metallicRoughness.png"
+      "uri": "textures/Octane_Chassis_metallicRoughness.webp"
     }
   ],
   "materials": [
