@@ -24,6 +24,7 @@ export default class Game {
   private chaseCamPivot: THREE.Object3D<THREE.Event>
   private ball: Ball
   private player1Car: Octane
+  private player2Car: Octane
   private camera: THREE.Camera
   private clock: THREE.Clock
   private delta: number
@@ -35,7 +36,8 @@ export default class Game {
     chaseCamPivot: THREE.Object3D<THREE.Event>,
     ball: Ball,
     player1Car: Octane,
-    camera: THREE.Camera
+    camera: THREE.Camera,
+    player2Car?: Octane
   ) {
     this.world = world
     this.renderer = renderer
@@ -43,10 +45,10 @@ export default class Game {
     this.chaseCamPivot = chaseCamPivot
     this.ball = ball
     this.player1Car = player1Car
+    this.player2Car = player2Car
     this.camera = camera
     this.keyMap = {}
     this.clock = new THREE.Clock()
-    console.log(this.keyMap)
   }
 
   static async createGameInstance(
@@ -71,6 +73,11 @@ export default class Game {
       },
       chaseCam
     )
+    const player2Car = await Octane.createCarInstance(scene, world, {
+      x: 6,
+      y: 1,
+      z: 0,
+    })
 
     world.gravity.set(0, -9.82, 0)
     createLight(scene, { x: 0, y: Game.WALL_HEIGHT / 2, z: 0 })
@@ -90,15 +97,12 @@ export default class Game {
       chaseCamPivot,
       ball,
       player1Car,
-      camera
+      camera,
+      player2Car
     )
   }
 
   inputHandler = (e: KeyboardEvent) => {
-    // console.log(e)
-    // console.log(this.keyMap)
-    // console.log(this)
-
     this.keyMap[e.key] = e.type === 'keydown'
   }
 
@@ -117,9 +121,9 @@ export default class Game {
     // Copy coordinates from Cannon to Three.js
     this.ball.update()
     this.player1Car.update()
+    this.player2Car.update()
     if (this.player1Car) {
       this.player1Car.setZeroTorque()
-      // console.log(this.player1Car)
       if (this.keyMap['w'] || this.keyMap['ArrowUp'])
         this.player1Car.accelerate()
       if (this.keyMap['s'] || this.keyMap['ArrowDown'])

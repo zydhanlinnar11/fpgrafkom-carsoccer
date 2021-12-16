@@ -16,6 +16,7 @@ export default class Octane {
     [-0.5, -0.25, -0.6],
     [-0.5, -0.25, 0.6],
   ]
+  private maxSpeed = 20
 
   private constructor(
     scene: THREE.Scene,
@@ -40,6 +41,7 @@ export default class Octane {
     this.octane.castShadow = true
     this.octane.position.set(x, y, z)
     scene.add(this.octane)
+    console.log(chaseCam)
     if (chaseCam) this.octane.add(chaseCam)
 
     const octaneShape = new CANNON.Box(new CANNON.Vec3(1.1, 0.3125, 0.375))
@@ -55,7 +57,6 @@ export default class Octane {
     const axis = new CANNON.Vec3(0, 0, 1)
     const down = new CANNON.Vec3(0, 0, -1)
     const quat = new CANNON.Quaternion()
-    const translation = new CANNON.Vec3(0, 0, 0)
     quat.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2)
 
     for (let i = 0; i < this.wheels.length; i++) {
@@ -65,8 +66,7 @@ export default class Octane {
         this.wheelOffsets[i][2] + z
       )
       scene.add(this.wheels[i])
-      const wheelShape = new CANNON.Cylinder(0.35, 0.35, 0.35, 200)
-      wheelShape.transformAllPoints(translation, quat)
+      const wheelShape = new CANNON.Sphere(0.35)
       const wheelBody = new CANNON.Body({ mass: 1 })
       wheelBody.addShape(wheelShape, new CANNON.Vec3(0, 0, 0))
       wheelBody.position.set(
@@ -143,22 +143,30 @@ export default class Octane {
 
   accelerate() {
     this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(2)) < 26.25 ? -this.maxForce : 0,
+      Math.abs(this.vehicle.getWheelSpeed(2)) < this.maxSpeed
+        ? -this.maxForce
+        : 0,
       2
     )
     this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(3)) < 26.25 ? -this.maxForce : 0,
+      Math.abs(this.vehicle.getWheelSpeed(3)) < this.maxSpeed
+        ? -this.maxForce
+        : 0,
       3
     )
   }
 
   reverse() {
     this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(2)) < 26.25 ? this.maxForce / 2 : 0,
+      Math.abs(this.vehicle.getWheelSpeed(2)) < this.maxSpeed
+        ? this.maxForce / 2
+        : 0,
       2
     )
     this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(3)) < 26.25 ? this.maxForce / 2 : 0,
+      Math.abs(this.vehicle.getWheelSpeed(3)) < this.maxSpeed
+        ? this.maxForce / 2
+        : 0,
       3
     )
   }
