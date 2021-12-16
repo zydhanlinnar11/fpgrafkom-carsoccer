@@ -7,6 +7,7 @@ import createLight from './light'
 import createChaseCam from './chaseCam'
 import cannonDebugger from 'cannon-es-debugger'
 import Octane from './Object/Octane'
+import Goal from './Object/Goal'
 const DEBUG = false
 
 export default class Game {
@@ -28,6 +29,8 @@ export default class Game {
   private camera: THREE.Camera
   private clock: THREE.Clock
   private delta: number
+  private player1Goal: Goal
+  private player2Goal: Goal
 
   private constructor(
     renderer: THREE.WebGLRenderer,
@@ -37,7 +40,9 @@ export default class Game {
     ball: Ball,
     player1Car: Octane,
     camera: THREE.Camera,
-    player2Car?: Octane
+    player2Car?: Octane,
+    player1Goal?: Goal,
+    player2Goal?: Goal
   ) {
     this.world = world
     this.renderer = renderer
@@ -49,6 +54,8 @@ export default class Game {
     this.camera = camera
     this.keyMap = {}
     this.clock = new THREE.Clock()
+    this.player1Goal = player1Goal
+    this.player2Goal = player2Goal
   }
 
   static async createGameInstance(
@@ -78,6 +85,26 @@ export default class Game {
       y: 1,
       z: 0,
     })
+    const player1Goal = await Goal.createGoalInstance(
+      scene,
+      world,
+      {
+        x: -Game.planeSize.width / 2 + 4,
+        y: 0,
+        z: -7,
+      },
+      -Math.PI / 2
+    )
+    const player2Goal = await Goal.createGoalInstance(
+      scene,
+      world,
+      {
+        x: Game.planeSize.width / 2 - 4,
+        y: 0,
+        z: 7,
+      },
+      Math.PI / 2
+    )
 
     world.gravity.set(0, -9.82, 0)
     createLight(scene, { x: 0, y: Game.WALL_HEIGHT / 2, z: 0 })
@@ -98,7 +125,9 @@ export default class Game {
       ball,
       player1Car,
       camera,
-      player2Car
+      player2Car,
+      player1Goal,
+      player2Goal
     )
   }
 

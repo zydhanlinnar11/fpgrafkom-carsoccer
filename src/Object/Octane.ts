@@ -41,7 +41,6 @@ export default class Octane {
     this.octane.castShadow = true
     this.octane.position.set(x, y, z)
     scene.add(this.octane)
-    console.log(chaseCam)
     if (chaseCam) this.octane.add(chaseCam)
 
     const octaneShape = new CANNON.Box(new CANNON.Vec3(1.1, 0.3125, 0.375))
