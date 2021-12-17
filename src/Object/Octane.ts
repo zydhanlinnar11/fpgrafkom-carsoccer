@@ -17,14 +17,17 @@ export default class Octane {
     [-0.5, -0.25, 0.6],
   ]
   private maxSpeed = 20
+  private reverseOrientation
 
   private constructor(
     scene: THREE.Scene,
     world: CANNON.World,
     nodes: THREE.Object3D<THREE.Event>[],
     { x, y, z }: Coordinate,
-    chaseCam?: THREE.Object3D<THREE.Event>
+    chaseCam?: THREE.Object3D<THREE.Event>,
+    reverseOrientation: boolean = false
   ) {
+    this.reverseOrientation = reverseOrientation
     this.octane = nodes[0] as Object3DGLTF
     this.octane.traverse((child: Object3DGLTF) => {
       if (child.isMesh) {
@@ -60,9 +63,9 @@ export default class Octane {
 
     for (let i = 0; i < this.wheels.length; i++) {
       this.wheels[i].position.set(
-        this.wheelOffsets[i][0] + x,
-        this.wheelOffsets[i][1] + y,
-        this.wheelOffsets[i][2] + z
+        this.wheelOffsets[i][0] * (this.reverseOrientation ? -1 : 1) + x,
+        this.wheelOffsets[i][1] * (this.reverseOrientation ? -1 : 1) + y,
+        this.wheelOffsets[i][2] * (this.reverseOrientation ? -1 : 1) + z
       )
       scene.add(this.wheels[i])
       const wheelShape = new CANNON.Sphere(0.35)
@@ -75,7 +78,12 @@ export default class Octane {
       )
       this.vehicle.addWheel({
         body: wheelBody,
-        position: new CANNON.Vec3(...this.wheelOffsets[i]),
+        position: new CANNON.Vec3(
+          ...this.wheelOffsets[i].map(
+            (offset, index) =>
+              offset * (this.reverseOrientation && index !== 1 ? -1 : 1)
+          )
+        ),
         axis,
         direction: down,
       })
@@ -90,11 +98,19 @@ export default class Octane {
     scene: THREE.Scene,
     world: CANNON.World,
     position: Coordinate,
-    chaseCam?: THREE.Object3D<THREE.Event>
+    chaseCam?: THREE.Object3D<THREE.Event>,
+    reverseOrientation: boolean = false
   ) {
     const result = await new GLTFLoader().loadAsync('/Octane/scene.gltf')
     const nodes = result.scene.children[0].children[0].children[0].children
-    return new Octane(scene, world, nodes, position, chaseCam)
+    return new Octane(
+      scene,
+      world,
+      nodes,
+      position,
+      chaseCam,
+      reverseOrientation
+    )
   }
 
   update() {
@@ -111,6 +127,8 @@ export default class Octane {
       this.vehicle.chassisBody.quaternion.w
     )
     this.octane.rotateX(-Math.PI / 2)
+    if (this.reverseOrientation) this.octane.rotateZ(Math.PI)
+    // console.log(this.octane.quaternion)
 
     for (let i = 0; i < this.wheels.length; i++) {
       if (this.wheels[i] && this.vehicle?.wheelBodies?.[i]) {
@@ -141,33 +159,23 @@ export default class Octane {
   }
 
   accelerate() {
-    this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(2)) < this.maxSpeed
-        ? -this.maxForce
-        : 0,
-      2
-    )
-    this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(3)) < this.maxSpeed
-        ? -this.maxForce
-        : 0,
-      3
-    )
+    for (let i = 2; i <= 3; i++)
+      this.vehicle.applyWheelForce(
+        Math.abs(this.vehicle.getWheelSpeed(i)) < this.maxSpeed
+          ? -this.maxForce * (this.reverseOrientation ? -1 : 1)
+          : 0,
+        i
+      )
   }
 
   reverse() {
-    this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(2)) < this.maxSpeed
-        ? this.maxForce / 2
-        : 0,
-      2
-    )
-    this.vehicle.applyWheelForce(
-      Math.abs(this.vehicle.getWheelSpeed(3)) < this.maxSpeed
-        ? this.maxForce / 2
-        : 0,
-      3
-    )
+    for (let i = 2; i <= 3; i++)
+      this.vehicle.applyWheelForce(
+        Math.abs(this.vehicle.getWheelSpeed(i)) < this.maxSpeed
+          ? (this.maxForce * (this.reverseOrientation ? -1 : 1)) / 2
+          : 0,
+        i
+      )
   }
 
   turnLeft() {

@@ -117,11 +117,17 @@ export default class Game {
       },
       chaseCam
     )
-    const player2Car = await Octane.createCarInstance(scene, world, {
-      x: 6,
-      y: 1,
-      z: 0,
-    })
+    const player2Car = await Octane.createCarInstance(
+      scene,
+      world,
+      {
+        x: 6,
+        y: 1,
+        z: 0,
+      },
+      null,
+      true
+    )
 
     world.gravity.set(0, -9.82, 0)
     createLight(scene, { x: 0, y: Game.WALL_HEIGHT / 2, z: 0 })
