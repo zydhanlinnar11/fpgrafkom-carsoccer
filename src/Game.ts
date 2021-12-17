@@ -8,11 +8,15 @@ import createChaseCam from './chaseCam'
 import cannonDebugger from 'cannon-es-debugger'
 import Octane from './Object/Octane'
 import Goal from './Object/Goal'
-import { showMainMenu } from './script'
+import { hideCreateRoomMenu, hideJoinRoomMenu, showMainMenu } from './script'
+import { Socket } from 'socket.io-client'
 const DEBUG = false
 
 export interface GameOption {
   soloMode?: boolean
+  socket?: Socket
+  isFirstPlayer?: boolean
+  roomID?: string
 }
 
 export default class Game {
@@ -23,6 +27,10 @@ export default class Game {
   }
   private static WALL_HEIGHT = 40
   private keyMap: { [id: string]: boolean }
+  private remoteKeyMap: {
+    player?: 'p1' | 'p2'
+    keyMap: { [id: string]: boolean }
+  }
 
   private renderer: THREE.WebGLRenderer
   private scene: THREE.Scene
@@ -59,6 +67,7 @@ export default class Game {
     this.player2Car = player2Car
     this.camera = camera
     this.keyMap = {}
+    this.remoteKeyMap = { keyMap: {} }
     this.clock = new THREE.Clock()
 
     this.options = options
@@ -103,7 +112,7 @@ export default class Game {
         y: 1,
         z: 0,
       },
-      chaseCam
+      options.soloMode || options.isFirstPlayer ? chaseCam : null
     )
     const player2Car = options?.soloMode
       ? null
@@ -115,7 +124,7 @@ export default class Game {
             y: 1,
             z: 0,
           },
-          null,
+          options.soloMode || options.isFirstPlayer ? null : chaseCam,
           true
         )
 
@@ -181,13 +190,33 @@ export default class Game {
   }
 
   inputHandler = (e: KeyboardEvent) => {
+    console.log(this.options.roomID)
+
     this.keyMap[e.key] = e.type === 'keydown'
+    if (!this.options?.soloMode && this.options?.isFirstPlayer)
+      this.options?.socket.emit(
+        'update-input',
+        this.options?.roomID,
+        JSON.stringify({ player: 'p1', keyMap: this.keyMap })
+      )
+    else if (!this.options?.soloMode && !this.options?.isFirstPlayer)
+      this.options?.socket.emit(
+        'update-input',
+        this.options?.roomID,
+        JSON.stringify({ player: 'p2', keyMap: this.keyMap })
+      )
+  }
+
+  remoteInputHandler = (remoteKeyMapStringified: string) => {
+    this.remoteKeyMap = JSON.parse(remoteKeyMapStringified)
+    console.log(this.remoteKeyMap)
   }
 
   animate() {
     this.loopAnimNum = requestAnimationFrame(() => this.animate())
     document.addEventListener('keydown', this.inputHandler, false)
     document.addEventListener('keyup', this.inputHandler, false)
+    this.options.socket.on('receive-input', this.remoteInputHandler)
 
     if (DEBUG) cannonDebugger(this.scene, this.world.bodies)
 
@@ -198,23 +227,60 @@ export default class Game {
 
     // Copy coordinates from Cannon to Three.js
     this.ball.update()
+    const locallyControlledCar =
+      this.options?.soloMode || this.options?.isFirstPlayer
+        ? this.player1Car
+        : this.player2Car
+    this.player1Car.update()
+    const remotelyControlledCar = this.options?.soloMode
+      ? null
+      : this.options?.isFirstPlayer
+      ? this.player2Car
+      : this.player1Car
     this.player1Car.update()
     if (this.player2Car) this.player2Car.update()
-    if (this.player1Car) {
-      this.player1Car.setZeroTorque()
-      if (this.keyMap['w'] || this.keyMap['ArrowUp'])
-        this.player1Car.accelerate()
-      if (this.keyMap['s'] || this.keyMap['ArrowDown'])
-        this.player1Car.reverse()
-      if (this.keyMap['a'] || this.keyMap['ArrowLeft'])
-        this.player1Car.turnLeft()
-      if (this.keyMap['d'] || this.keyMap['ArrowRight'])
-        this.player1Car.turnRight()
-      if (this.keyMap['r']) this.player1Car.resetPosition()
-      if (this.keyMap['Escape'] && this.loopAnimNum) this.exitGame()
 
-      this.camera.lookAt(this.player1Car.getChassis().position)
+    locallyControlledCar.setZeroTorque()
+    if (this.keyMap['w'] || this.keyMap['ArrowUp'])
+      locallyControlledCar.accelerate()
+    if (this.keyMap['s'] || this.keyMap['ArrowDown'])
+      locallyControlledCar.reverse()
+    if (this.keyMap['a'] || this.keyMap['ArrowLeft'])
+      locallyControlledCar.turnLeft()
+    if (this.keyMap['d'] || this.keyMap['ArrowRight'])
+      locallyControlledCar.turnRight()
+    if (this.keyMap['r']) locallyControlledCar.resetPosition()
+    if (this.keyMap['Escape'] && this.loopAnimNum) this.exitGame()
+
+    if (
+      remotelyControlledCar &&
+      ((this.options?.isFirstPlayer && this.remoteKeyMap.player !== 'p1') ||
+        (!this.options?.isFirstPlayer && this.remoteKeyMap.player !== 'p2'))
+    ) {
+      // console.log(this.remoteKeyMap)
+      if (this.remoteKeyMap.keyMap['w'] || this.remoteKeyMap.keyMap['ArrowUp'])
+        remotelyControlledCar.accelerate()
+      if (
+        this.remoteKeyMap.keyMap['s'] ||
+        this.remoteKeyMap.keyMap['ArrowDown']
+      )
+        remotelyControlledCar.reverse()
+      if (
+        this.remoteKeyMap.keyMap['a'] ||
+        this.remoteKeyMap.keyMap['ArrowLeft']
+      )
+        remotelyControlledCar.turnLeft()
+      if (
+        this.remoteKeyMap.keyMap['d'] ||
+        this.remoteKeyMap.keyMap['ArrowRight']
+      )
+        remotelyControlledCar.turnRight()
+      if (this.remoteKeyMap.keyMap['r']) remotelyControlledCar.resetPosition()
+      if (this.remoteKeyMap.keyMap['Escape'] && this.loopAnimNum)
+        this.exitGame()
     }
+
+    this.camera.lookAt(locallyControlledCar.getChassis().position)
 
     this.chaseCamPivot.getWorldPosition(v)
     if (v.y < 1) {
@@ -236,6 +302,8 @@ export default class Game {
 
     document.getElementById('game-canvas').classList.add('hidden')
     document.getElementById('game-canvas').classList.remove('flex')
+    hideCreateRoomMenu()
+    hideJoinRoomMenu()
 
     showMainMenu()
   }

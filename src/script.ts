@@ -66,8 +66,10 @@ document.getElementById('solo-button').addEventListener('click', () => {
 })
 
 const socket = io(
-  PRODUCTION ? 'https://api.fp-grafkom.zydhan.xyz' : 'http://localhost:3000'
+  PRODUCTION ? 'https://api.fp-grafkom.zydhan.xyz' : 'http://10.11.11.11:3000'
 )
+
+let waitingForFriend = false
 
 document
   .getElementById('cancel-room-creation-button')
@@ -78,13 +80,25 @@ document
       () => {
         hideCreateRoomMenu()
         showMainMenu()
+        waitingForFriend = false
       }
     )
   })
 
+socket.on('somebody-joined', (roomID: string) => {
+  if (!waitingForFriend) return
+  hideMenuAndLaunchGame({
+    soloMode: false,
+    socket,
+    isFirstPlayer: true,
+    roomID,
+  })
+})
+
 document.getElementById('create-room-button').addEventListener('click', () => {
   if (socket.disconnected) socket.connect()
   socket.emit('create-room', (roomID: string) => {
+    waitingForFriend = true
     document.getElementById('created-room-id').innerText = roomID
     hideMainMenu()
     showCreateRoomMenu()
@@ -125,15 +139,20 @@ document
   .addEventListener('submit', (e: SubmitEvent) => {
     e.preventDefault()
     document.getElementById('join-room-error-msg').innerText = ''
-    socket.emit(
-      'join-room',
-      (document.getElementById('room-id-input') as HTMLInputElement).value,
-      (status: boolean, message: string) => {
-        if (!status) {
-          document.getElementById('join-room-error-msg').innerText = message
-          return
-        }
-        console.log(status, message)
+    const roomID = (
+      document.getElementById('room-id-input') as HTMLInputElement
+    ).value
+    socket.emit('join-room', roomID, (status: boolean, message: string) => {
+      if (!status) {
+        document.getElementById('join-room-error-msg').innerText = message
+        return
       }
-    )
+      hideMenuAndLaunchGame({
+        soloMode: false,
+        socket,
+        isFirstPlayer: false,
+        roomID,
+      })
+      console.log(status, message)
+    })
   })
