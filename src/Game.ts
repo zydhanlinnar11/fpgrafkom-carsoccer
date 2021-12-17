@@ -8,6 +8,7 @@ import createChaseCam from './chaseCam'
 import cannonDebugger from 'cannon-es-debugger'
 import Octane from './Object/Octane'
 import Goal from './Object/Goal'
+import { showMainMenu } from './script'
 const DEBUG = false
 
 export interface GameOption {
@@ -236,7 +237,6 @@ export default class Game {
     document.getElementById('game-canvas').classList.add('hidden')
     document.getElementById('game-canvas').classList.remove('flex')
 
-    document.getElementById('main-menu-section').classList.add('flex')
-    document.getElementById('main-menu-section').classList.remove('hidden')
+    showMainMenu()
   }
 }

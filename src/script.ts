@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import Game, { GameOption } from './Game'
 import './styles.css'
+import { io } from 'socket.io-client'
+import { PRODUCTION } from './Config'
 
 const launchGame = async (options?: GameOption) => {
   const camera = new THREE.PerspectiveCamera(
@@ -22,20 +24,39 @@ const launchGame = async (options?: GameOption) => {
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
   }
-  const game = await Game.createGameInstance(renderer, camera, options)
-
-  game.animate()
-}
-
-function hideMenuAndLaunchGame(options?: GameOption) {
   document.getElementById('scoreboard-section').classList.remove('hidden')
   document.getElementById('scoreboard-section').classList.add('flex')
 
   document.getElementById('game-canvas').classList.remove('hidden')
   document.getElementById('game-canvas').classList.add('flex')
 
+  const game = await Game.createGameInstance(renderer, camera, options)
+
+  game.animate()
+}
+
+export const hideMainMenu = () => {
   document.getElementById('main-menu-section').classList.remove('flex')
   document.getElementById('main-menu-section').classList.add('hidden')
+}
+
+export const showMainMenu = () => {
+  document.getElementById('main-menu-section').classList.remove('hidden')
+  document.getElementById('main-menu-section').classList.add('flex')
+}
+
+export const hideCreateRoomMenu = () => {
+  document.getElementById('create-room-section').classList.remove('flex')
+  document.getElementById('create-room-section').classList.add('hidden')
+}
+
+export const showCreateRoomMenu = () => {
+  document.getElementById('create-room-section').classList.remove('hidden')
+  document.getElementById('create-room-section').classList.add('flex')
+}
+
+function hideMenuAndLaunchGame(options?: GameOption) {
+  showMainMenu()
 
   launchGame(options)
 }
@@ -43,3 +64,76 @@ function hideMenuAndLaunchGame(options?: GameOption) {
 document.getElementById('solo-button').addEventListener('click', () => {
   hideMenuAndLaunchGame({ soloMode: true })
 })
+
+const socket = io(
+  PRODUCTION ? 'https://api.fp-grafkom.zydhan.xyz' : 'http://localhost:3000'
+)
+
+document
+  .getElementById('cancel-room-creation-button')
+  .addEventListener('click', () => {
+    socket.emit(
+      'delete-room',
+      document.getElementById('created-room-id').innerText,
+      () => {
+        hideCreateRoomMenu()
+        showMainMenu()
+      }
+    )
+  })
+
+document.getElementById('create-room-button').addEventListener('click', () => {
+  if (socket.disconnected) socket.connect()
+  socket.emit('create-room', (roomID: string) => {
+    document.getElementById('created-room-id').innerText = roomID
+    hideMainMenu()
+    showCreateRoomMenu()
+  })
+})
+
+document.getElementById('copy-room-id').addEventListener('click', () => {
+  navigator.clipboard.writeText(
+    document.getElementById('created-room-id').innerText
+  )
+})
+
+export const hideJoinRoomMenu = () => {
+  document.getElementById('join-room-section').classList.remove('flex')
+  document.getElementById('join-room-section').classList.add('hidden')
+}
+
+export const showJoinRoomMenu = () => {
+  document.getElementById('join-room-section').classList.remove('hidden')
+  document.getElementById('join-room-section').classList.add('flex')
+}
+
+document.getElementById('join-room-button').addEventListener('click', () => {
+  hideMainMenu()
+  showJoinRoomMenu()
+})
+
+document
+  .getElementById('cancel-room-join-button')
+  .addEventListener('click', () => {
+    document.getElementById('join-room-error-msg').innerText = ''
+    hideJoinRoomMenu()
+    showMainMenu()
+  })
+
+document
+  .getElementById('join-room-section')
+  .addEventListener('submit', (e: SubmitEvent) => {
+    e.preventDefault()
+    document.getElementById('join-room-error-msg').innerText = ''
+    socket.emit(
+      'join-room',
+      (document.getElementById('room-id-input') as HTMLInputElement).value,
+      (status: boolean, message: string) => {
+        if (!status) {
+          document.getElementById('join-room-error-msg').innerText = message
+          return
+        }
+        console.log(status, message)
+      }
+    )
+  })
