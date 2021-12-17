@@ -53,6 +53,8 @@ export default class Game {
     this.keyMap = {}
     this.clock = new THREE.Clock()
     localStorage.clear()
+    Game.updateScore('p1', Game.getScore('p1'))
+    Game.updateScore('p2', Game.getScore('p2'))
   }
 
   static async createGameInstance(
@@ -89,12 +91,10 @@ export default class Game {
         player1Goal.getBodyID() !== collidedWith.id
       )
         return
-      if (player2Goal.getBodyID() === collidedWith.id) {
-        let newScore = localStorage.getItem('p1-score') as unknown as number
-        newScore++
-        document.getElementById('p1-score').innerText = newScore.toString()
-        localStorage.setItem('p1-score', newScore.toString())
-      }
+      if (player2Goal.getBodyID() === collidedWith.id)
+        Game.updateScore('p1', Game.getScore('p1') + 1)
+      if (player1Goal.getBodyID() === collidedWith.id)
+        Game.updateScore('p2', Game.getScore('p2') + 1)
     }
 
     const ball = await Ball.createBallInstance(
@@ -144,6 +144,15 @@ export default class Game {
       camera,
       player2Car
     )
+  }
+
+  static updateScore(player: 'p1' | 'p2', score: number) {
+    document.getElementById(`${player}-score`).innerText = JSON.stringify(score)
+    localStorage.setItem(`${player}-score`, JSON.stringify(score))
+  }
+
+  static getScore(player: 'p1' | 'p2') {
+    return JSON.parse(localStorage.getItem(`${player}-score`)) ?? 0
   }
 
   inputHandler = (e: KeyboardEvent) => {
