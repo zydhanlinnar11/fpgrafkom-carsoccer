@@ -29,8 +29,6 @@ export default class Game {
   private camera: THREE.Camera
   private clock: THREE.Clock
   private delta: number
-  private player1Goal: Goal
-  private player2Goal: Goal
 
   private constructor(
     renderer: THREE.WebGLRenderer,
@@ -54,8 +52,6 @@ export default class Game {
     this.camera = camera
     this.keyMap = {}
     this.clock = new THREE.Clock()
-    this.player1Goal = player1Goal
-    this.player2Goal = player2Goal
   }
 
   static async createGameInstance(
@@ -65,26 +61,6 @@ export default class Game {
     const world = new CANNON.World()
     const scene = new THREE.Scene()
     const { chaseCam, chaseCamPivot } = createChaseCam(scene)
-    const ball = await Ball.createBallInstance(scene, world, {
-      x: 0,
-      y: 1.5,
-      z: 0,
-    })
-    const player1Car = await Octane.createCarInstance(
-      scene,
-      world,
-      {
-        x: -6,
-        y: 1,
-        z: 0,
-      },
-      chaseCam
-    )
-    const player2Car = await Octane.createCarInstance(scene, world, {
-      x: 6,
-      y: 1,
-      z: 0,
-    })
     const player1Goal = await Goal.createGoalInstance(
       scene,
       world,
@@ -106,6 +82,41 @@ export default class Game {
       Math.PI / 2
     )
 
+    const ballCollisionHandler = (collidedWith: CANNON.Body) => {
+      if (
+        player2Goal.getBodyID() !== collidedWith.id &&
+        player1Goal.getBodyID() !== collidedWith.id
+      )
+        return
+      console.log(collidedWith)
+    }
+
+    const ball = await Ball.createBallInstance(
+      scene,
+      world,
+      {
+        x: 0,
+        y: 1.5,
+        z: 0,
+      },
+      ballCollisionHandler
+    )
+    const player1Car = await Octane.createCarInstance(
+      scene,
+      world,
+      {
+        x: -6,
+        y: 1,
+        z: 0,
+      },
+      chaseCam
+    )
+    const player2Car = await Octane.createCarInstance(scene, world, {
+      x: 6,
+      y: 1,
+      z: 0,
+    })
+
     world.gravity.set(0, -9.82, 0)
     createLight(scene, { x: 0, y: Game.WALL_HEIGHT / 2, z: 0 })
     createPlane(scene, world, Game.planeSize)
@@ -125,9 +136,7 @@ export default class Game {
       ball,
       player1Car,
       camera,
-      player2Car,
-      player1Goal,
-      player2Goal
+      player2Car
     )
   }
 

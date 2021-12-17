@@ -7,13 +7,15 @@ import Coordinate from '../interface/Coordinate'
 export default class Ball {
   private ball: Object3DGLTF
   private ballBody: CANNON.Body
+  private collisionHandlerCallback: (body: CANNON.Body) => void
 
   // This shouldn't be used outside this class
   private constructor(
     scene: THREE.Scene,
     world: CANNON.World,
     ballGLTF: Object3DGLTF,
-    { x, y, z }: Coordinate
+    { x, y, z }: Coordinate,
+    colissionHandlerCallback: (body: CANNON.Body) => void
   ) {
     this.ball = ballGLTF
     this.ball.scale.set(1.5, 1.5, 1.5)
@@ -25,19 +27,23 @@ export default class Ball {
     this.ballBody.addShape(new CANNON.Sphere(1.5))
     this.ballBody.position.set(x, y, z)
     world.addBody(this.ballBody)
+    this.ballBody.addEventListener('collide', this.collisionHandler)
+    this.collisionHandlerCallback = colissionHandlerCallback
   }
 
   static async createBallInstance(
     scene: THREE.Scene,
     world: CANNON.World,
-    position: Coordinate
+    position: Coordinate,
+    colissionHandlerCallback: (body: CANNON.Body) => void
   ) {
     const result = await new GLTFLoader().loadAsync('/Ball/scene.gltf')
     return new Ball(
       scene,
       world,
       result.scene.children[0] as Object3DGLTF,
-      position
+      position,
+      colissionHandlerCallback
     )
   }
 
@@ -55,5 +61,9 @@ export default class Ball {
       this.ballBody.quaternion.z,
       this.ballBody.quaternion.w
     )
+  }
+
+  collisionHandler = (e: { body: CANNON.Body }) => {
+    this.collisionHandlerCallback(e.body)
   }
 }
