@@ -84,29 +84,6 @@ export default class Game {
       },
       Math.PI / 2
     )
-
-    const ballCollisionHandler = (collidedWith: CANNON.Body) => {
-      if (
-        player2Goal.getBodyID() !== collidedWith.id &&
-        player1Goal.getBodyID() !== collidedWith.id
-      )
-        return
-      if (player2Goal.getBodyID() === collidedWith.id)
-        Game.updateScore('p1', Game.getScore('p1') + 1)
-      if (player1Goal.getBodyID() === collidedWith.id)
-        Game.updateScore('p2', Game.getScore('p2') + 1)
-    }
-
-    const ball = await Ball.createBallInstance(
-      scene,
-      world,
-      {
-        x: 0,
-        y: 1.5,
-        z: 0,
-      },
-      ballCollisionHandler
-    )
     const player1Car = await Octane.createCarInstance(
       scene,
       world,
@@ -127,6 +104,32 @@ export default class Game {
       },
       null,
       true
+    )
+
+    const ballCollisionHandler = (collidedWith: CANNON.Body, ball: Ball) => {
+      if (
+        player2Goal.getBodyID() !== collidedWith.id &&
+        player1Goal.getBodyID() !== collidedWith.id
+      )
+        return
+      if (player2Goal.getBodyID() === collidedWith.id)
+        Game.updateScore('p1', Game.getScore('p1') + 1)
+      if (player1Goal.getBodyID() === collidedWith.id)
+        Game.updateScore('p2', Game.getScore('p2') + 1)
+      player1Car.resetPosition()
+      player2Car.resetPosition()
+      ball.resetPosition()
+    }
+
+    const ball = await Ball.createBallInstance(
+      scene,
+      world,
+      {
+        x: 0,
+        y: 1.5,
+        z: 0,
+      },
+      ballCollisionHandler
     )
 
     world.gravity.set(0, -9.82, 0)
@@ -191,6 +194,7 @@ export default class Game {
         this.player1Car.turnLeft()
       if (this.keyMap['d'] || this.keyMap['ArrowRight'])
         this.player1Car.turnRight()
+      if (this.keyMap['r']) this.player1Car.resetPosition()
       this.camera.lookAt(this.player1Car.getChassis().position)
     }
 

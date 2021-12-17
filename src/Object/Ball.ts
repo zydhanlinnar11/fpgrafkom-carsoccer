@@ -3,11 +3,18 @@ import * as CANNON from 'cannon-es'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import Coordinate from '../interface/Coordinate'
+import { Vec3 } from 'cannon-es'
 
 export default class Ball {
   private ball: Object3DGLTF
   private ballBody: CANNON.Body
-  private collisionHandlerCallback: (collidedWith: CANNON.Body) => void
+  private collisionHandlerCallback: (
+    collidedWith: CANNON.Body,
+    ball: Ball
+  ) => void
+  private hasBeenReset: boolean
+  private initBallPos: CANNON.Vec3
+  private initBallQuarternion: CANNON.Quaternion
 
   // This shouldn't be used outside this class
   private constructor(
@@ -15,7 +22,7 @@ export default class Ball {
     world: CANNON.World,
     ballGLTF: Object3DGLTF,
     { x, y, z }: Coordinate,
-    colissionHandlerCallback: (collidedWith: CANNON.Body) => void
+    colissionHandlerCallback: (collidedWith: CANNON.Body, ball: Ball) => void
   ) {
     this.ball = ballGLTF
     this.ball.scale.set(1.5, 1.5, 1.5)
@@ -35,7 +42,7 @@ export default class Ball {
     scene: THREE.Scene,
     world: CANNON.World,
     position: Coordinate,
-    colissionHandlerCallback: (collidedWith: CANNON.Body) => void
+    colissionHandlerCallback: (collidedWith: CANNON.Body, ball: Ball) => void
   ) {
     const result = await new GLTFLoader().loadAsync('/Ball/scene.gltf')
     return new Ball(
@@ -64,6 +71,35 @@ export default class Ball {
   }
 
   collisionHandler = (e: { body: CANNON.Body }) => {
-    this.collisionHandlerCallback(e.body)
+    this.collisionHandlerCallback(e.body, this)
+  }
+
+  resetPosition() {
+    if (!this.hasBeenReset) {
+      this.initBallPos = new Vec3(
+        this.ballBody.initPosition.x,
+        this.ballBody.initPosition.y,
+        this.ballBody.initPosition.z
+      )
+      this.initBallQuarternion = new CANNON.Quaternion(
+        this.ballBody.initQuaternion.x,
+        this.ballBody.initQuaternion.y,
+        this.ballBody.initQuaternion.z,
+        this.ballBody.initQuaternion.w
+      )
+    }
+    this.ballBody.position = new Vec3(
+      this.initBallPos.x,
+      this.initBallPos.y,
+      this.initBallPos.z
+    )
+    this.ballBody.quaternion = new CANNON.Quaternion(
+      this.initBallQuarternion.x,
+      this.initBallQuarternion.y,
+      this.initBallQuarternion.z,
+      this.initBallQuarternion.w
+    )
+    this.ballBody.velocity.setZero()
+    this.hasBeenReset = true
   }
 }

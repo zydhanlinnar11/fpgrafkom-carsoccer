@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import Coordinate from '../interface/Coordinate'
+import { Vec3 } from 'cannon-es'
 
 export default class Octane {
   private octane: Object3DGLTF | null = null
@@ -18,6 +19,11 @@ export default class Octane {
   ]
   private maxSpeed = 20
   private reverseOrientation
+  private initBodyPos: CANNON.Vec3
+  private initBodyQuarternion: CANNON.Quaternion
+  private initWheelPos: CANNON.Vec3[] = []
+  private initWheelQuarternion: CANNON.Quaternion[] = []
+  private hasBeenReset: boolean = false
 
   private constructor(
     scene: THREE.Scene,
@@ -131,20 +137,18 @@ export default class Octane {
     // console.log(this.octane.quaternion)
 
     for (let i = 0; i < this.wheels.length; i++) {
-      if (this.wheels[i] && this.vehicle?.wheelBodies?.[i]) {
-        this.wheels[i].position.set(
-          this.vehicle.wheelBodies[i].position.x,
-          this.vehicle.wheelBodies[i].position.y,
-          this.vehicle.wheelBodies[i].position.z
-        )
-        this.wheels[i].quaternion.set(
-          this.vehicle.wheelBodies[i].quaternion.x,
-          this.vehicle.wheelBodies[i].quaternion.y,
-          this.vehicle.wheelBodies[i].quaternion.z,
-          this.vehicle.wheelBodies[i].quaternion.w
-        )
-        this.wheels[i].rotateX(-Math.PI / 2)
-      }
+      this.wheels[i].position.set(
+        this.vehicle.wheelBodies[i].position.x,
+        this.vehicle.wheelBodies[i].position.y,
+        this.vehicle.wheelBodies[i].position.z
+      )
+      this.wheels[i].quaternion.set(
+        this.vehicle.wheelBodies[i].quaternion.x,
+        this.vehicle.wheelBodies[i].quaternion.y,
+        this.vehicle.wheelBodies[i].quaternion.z,
+        this.vehicle.wheelBodies[i].quaternion.w
+      )
+      this.wheels[i].rotateX(-Math.PI / 2)
     }
   }
 
@@ -190,5 +194,67 @@ export default class Octane {
 
   getChassis() {
     return this.octane
+  }
+
+  resetPosition() {
+    if (!this.hasBeenReset) {
+      this.initBodyPos = new Vec3(
+        this.vehicle.chassisBody.initPosition.x,
+        this.vehicle.chassisBody.initPosition.y,
+        this.vehicle.chassisBody.initPosition.z
+      )
+      this.initBodyQuarternion = new CANNON.Quaternion(
+        this.vehicle.chassisBody.initQuaternion.x,
+        this.vehicle.chassisBody.initQuaternion.y,
+        this.vehicle.chassisBody.initQuaternion.z,
+        this.vehicle.chassisBody.initQuaternion.w
+      )
+    }
+    this.vehicle.chassisBody.position = new Vec3(
+      this.initBodyPos.x,
+      this.initBodyPos.y,
+      this.initBodyPos.z
+    )
+    this.vehicle.chassisBody.quaternion = new CANNON.Quaternion(
+      this.initBodyQuarternion.x,
+      this.initBodyQuarternion.y,
+      this.initBodyQuarternion.z,
+      this.initBodyQuarternion.w
+    )
+    this.vehicle.chassisBody.velocity.setZero()
+
+    for (let i = 0; i < this.wheels.length; i++) {
+      if (!this.hasBeenReset) {
+        this.initWheelPos.push(
+          new Vec3(
+            this.vehicle.wheelBodies[i].initPosition.x,
+            this.vehicle.wheelBodies[i].initPosition.y,
+            this.vehicle.wheelBodies[i].initPosition.z
+          )
+        )
+        this.initWheelQuarternion.push(
+          new CANNON.Quaternion(
+            this.vehicle.wheelBodies[i].initQuaternion.x,
+            this.vehicle.wheelBodies[i].initQuaternion.y,
+            this.vehicle.wheelBodies[i].initQuaternion.z,
+            this.vehicle.wheelBodies[i].initQuaternion.w
+          )
+        )
+      }
+      this.vehicle.wheelBodies[i].position = new Vec3(
+        this.initWheelPos[i].x,
+        this.initWheelPos[i].y,
+        this.initWheelPos[i].z
+      )
+      this.vehicle.wheelBodies[i].quaternion = new CANNON.Quaternion(
+        this.initWheelQuarternion[i].x,
+        this.initWheelQuarternion[i].y,
+        this.initWheelQuarternion[i].z,
+        this.initWheelQuarternion[i].w
+      )
+      this.vehicle.wheelBodies[i].velocity.setZero()
+    }
+    console.log('reset')
+    this.hasBeenReset = true
   }
 }
