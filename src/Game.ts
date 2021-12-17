@@ -52,6 +52,7 @@ export default class Game {
     this.camera = camera
     this.keyMap = {}
     this.clock = new THREE.Clock()
+    localStorage.clear()
   }
 
   static async createGameInstance(
@@ -88,7 +89,12 @@ export default class Game {
         player1Goal.getBodyID() !== collidedWith.id
       )
         return
-      console.log(collidedWith)
+      if (player2Goal.getBodyID() === collidedWith.id) {
+        let newScore = localStorage.getItem('p1-score') as unknown as number
+        newScore++
+        document.getElementById('p1-score').innerText = newScore.toString()
+        localStorage.setItem('p1-score', newScore.toString())
+      }
     }
 
     const ball = await Ball.createBallInstance(

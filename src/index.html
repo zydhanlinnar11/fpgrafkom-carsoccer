@@ -13,8 +13,78 @@
     />
     <meta property="og:locale" content="id_ID" />
     <meta property="og:site_name" content="Final Project Grafika Komputer A" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Display:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        font-family: 'Noto Sans Display', sans-serif;
+      }
+
+      .webgl {
+        position: fixed;
+        top: 0;
+        left: 0;
+        outline: none;
+      }
+
+      #scoreboard-section {
+        z-index: 2;
+        position: absolute;
+        width: 100%;
+        padding: 2rem;
+      }
+
+      #scoreboard {
+        display: flex;
+        background-color: #fff;
+        width: fit-content;
+        padding: 0 0.5rem;
+      }
+
+      #scoreboard * {
+        padding: 0.2rem 0.5rem;
+        font-weight: 600;
+        font-size: larger;
+      }
+
+      .score {
+        background-color: #00fd8a;
+      }
+
+      .teamname {
+        background-color: #40003e;
+        color: white;
+        display: flex;
+      }
+
+      .teamname p {
+        margin: auto;
+      }
+    </style>
   </head>
-  <body style="display: flex; width: 100%; justify-content: center; margin: 0">
-    <canvas class="webgl"></canvas>
+  <body>
+    <div style="display: flex">
+      <section id="scoreboard-section">
+        <div id="scoreboard">
+          <div class="teamname"><p>P1</p></div>
+          <div class="score">
+            <p><span id="p1-score">0</span> - <span id="p1-score">0</span></p>
+          </div>
+          <div class="teamname"><p>P2</p></div>
+        </div>
+      </section>
+      <canvas class="webgl"></canvas>
+    </div>
   </body>
 </html>
