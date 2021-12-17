@@ -18,7 +18,9 @@ module.exports = {
       template: path.resolve(__dirname, '../src/index.html'),
       minify: true,
     }),
-    new MiniCSSExtractPlugin(),
+    new MiniCSSExtractPlugin({
+      filename: 'styles.css',
+    }),
   ],
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
@@ -37,18 +39,17 @@ module.exports = {
         exclude: /node_modules/,
         use: ['babel-loader'],
       },
+      // Tailwind
+      {
+        test: /\.css$/,
+        use: [MiniCSSExtractPlugin.loader, 'css-loader', 'postcss-loader'],
+      },
 
       // TS
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
-      },
-
-      // CSS
-      {
-        test: /\.css$/,
-        use: [MiniCSSExtractPlugin.loader, 'css-loader'],
       },
 
       // Images

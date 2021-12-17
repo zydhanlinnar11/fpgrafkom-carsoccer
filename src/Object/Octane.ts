@@ -134,7 +134,6 @@ export default class Octane {
     )
     this.octane.rotateX(-Math.PI / 2)
     if (this.reverseOrientation) this.octane.rotateZ(Math.PI)
-    // console.log(this.octane.quaternion)
 
     for (let i = 0; i < this.wheels.length; i++) {
       this.wheels[i].position.set(
@@ -256,7 +255,6 @@ export default class Octane {
       this.vehicle.wheelBodies[i].velocity.setZero()
       this.vehicle.wheelBodies[i].angularVelocity.setZero()
     }
-    console.log('reset')
     this.hasBeenReset = true
   }
 }

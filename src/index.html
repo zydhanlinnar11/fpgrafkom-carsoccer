@@ -16,79 +16,66 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Display:wght@600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-      }
-
-      html,
-      body {
-        height: 100%;
-        width: 100%;
-        font-family: 'Noto Sans Display', sans-serif;
-      }
-
-      .webgl {
-        position: fixed;
-        top: 0;
-        left: 0;
-        outline: none;
-      }
-
-      #scoreboard-section {
-        z-index: 2;
-        position: absolute;
-        width: 100%;
-        padding: 2rem;
-        -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
-        -moz-box-sizing: border-box; /* Firefox, other Gecko */
-        box-sizing: border-box; /* Opera/IE 8+ */
-      }
-
-      #scoreboard {
-        display: flex;
-        background-color: #fff;
-        width: fit-content;
-        padding: 0 0.5rem;
-      }
-
-      #scoreboard * {
-        padding: 0.2rem 0.5rem;
-        font-weight: 600;
-        font-size: larger;
-      }
-
-      .score {
-        background-color: #00fd8a;
-      }
-
-      .teamname {
-        background-color: #40003e;
-        color: white;
-        display: flex;
-      }
-
-      .teamname p {
-        margin: auto;
-      }
-    </style>
   </head>
-  <body>
-    <div style="display: flex">
-      <section id="scoreboard-section">
-        <div id="scoreboard">
-          <div class="teamname"><p>P1</p></div>
-          <div class="score">
-            <p><span id="p1-score">0</span> - <span id="p2-score">0</span></p>
-          </div>
-          <div class="teamname"><p>P2</p></div>
+  <body class="flex bg-gray-900 text-white">
+    <section id="scoreboard-section" class="hidden absolute w-full p-8 z-10">
+      <div
+        id="scoreboard"
+        class="flex p-4 font-semibold text-2xl bg-white py-0 px-1"
+      >
+        <div class="flex p-4" style="background-color: #40003e">
+          <p class="m-auto">P1</p>
         </div>
-      </section>
-      <canvas class="webgl"></canvas>
+        <div class="score text-black p-4" style="background-color: #00fd8a">
+          <p>
+            <span id="p1-score">0</span> -
+            <span id="p2-score">0</span>
+          </p>
+        </div>
+        <div class="flex p-4" style="background-color: #40003e"><p>P2</p></div>
+      </div>
+    </section>
+    <canvas
+      class="webgl fixed top-0 left-0 outline-none hidden"
+      id="game-canvas"
+    ></canvas>
+    <div
+      id="main-menu-section"
+      class="flex flex-col mx-auto w-full"
+      style="
+        min-height: 75vh;
+        max-width: 980px;
+        padding-left: calc(max(22px, env(safe-area-inset-left)));
+        padding-right: calc(max(22px, env(safe-area-inset-right)));
+      "
+    >
+      <div class="max-w-xs m-auto w-full">
+        <div class="text-center mb-5">
+          <h1 class="text-3xl font-semibold">Car Soccer</h1>
+        </div>
+        <button
+          type="button"
+          class="
+            rounded-md
+            border-2 border-opacity-50 border-gray-600
+            w-full
+            h-10
+            hover:bg-blue-600 hover:bg-opacity-30
+            transition-colors
+            duration-100
+            focus:bg-blue-900 focus:bg-opacity-30
+            disabled:text-gray-400
+            disabled:hover:bg-transparent
+            disabled:cursor-not-allowed
+          "
+          id="solo-button"
+        >
+          Free Play
+        </button>
+      </div>
     </div>
   </body>
 </html>

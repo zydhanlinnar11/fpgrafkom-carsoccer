@@ -56,7 +56,6 @@ export default class Ball {
 
   update() {
     // Copy coordinates from Cannon to Three.js
-    // console.log(this.ball.position)
     this.ball.position.set(
       this.ballBody.position.x,
       this.ballBody.position.y,

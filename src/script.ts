@@ -1,7 +1,8 @@
 import * as THREE from 'three'
-import Game from './Game'
+import Game, { GameOption } from './Game'
+import './styles.css'
 
-const launchGame = async () => {
+const launchGame = async (options?: GameOption) => {
   const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
@@ -21,9 +22,24 @@ const launchGame = async () => {
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
   }
-  const game = await Game.createGameInstance(renderer, camera)
+  const game = await Game.createGameInstance(renderer, camera, options)
 
   game.animate()
 }
 
-launchGame()
+function hideMenuAndLaunchGame(options?: GameOption) {
+  document.getElementById('scoreboard-section').classList.remove('hidden')
+  document.getElementById('scoreboard-section').classList.add('flex')
+
+  document.getElementById('game-canvas').classList.remove('hidden')
+  document.getElementById('game-canvas').classList.add('flex')
+
+  document.getElementById('main-menu-section').classList.remove('flex')
+  document.getElementById('main-menu-section').classList.add('hidden')
+
+  launchGame(options)
+}
+
+document.getElementById('solo-button').addEventListener('click', () => {
+  hideMenuAndLaunchGame({ soloMode: true })
+})

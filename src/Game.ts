@@ -10,6 +10,10 @@ import Octane from './Object/Octane'
 import Goal from './Object/Goal'
 const DEBUG = false
 
+export interface GameOption {
+  soloMode?: boolean
+}
+
 export default class Game {
   private static sizeFactor = 0.6
   private static planeSize: PlaneSize = {
@@ -29,6 +33,8 @@ export default class Game {
   private camera: THREE.Camera
   private clock: THREE.Clock
   private delta: number
+  private loopAnimNum?: number
+  private options?: GameOption = { soloMode: false }
 
   private constructor(
     renderer: THREE.WebGLRenderer,
@@ -40,7 +46,8 @@ export default class Game {
     camera: THREE.Camera,
     player2Car?: Octane,
     player1Goal?: Goal,
-    player2Goal?: Goal
+    player2Goal?: Goal,
+    options?: GameOption
   ) {
     this.world = world
     this.renderer = renderer
@@ -52,6 +59,8 @@ export default class Game {
     this.camera = camera
     this.keyMap = {}
     this.clock = new THREE.Clock()
+
+    this.options = options
     localStorage.clear()
     Game.updateScore('p1', Game.getScore('p1'))
     Game.updateScore('p2', Game.getScore('p2'))
@@ -59,7 +68,8 @@ export default class Game {
 
   static async createGameInstance(
     renderer: THREE.WebGLRenderer,
-    camera: THREE.Camera
+    camera: THREE.Camera,
+    options?: GameOption
   ) {
     const world = new CANNON.World()
     const scene = new THREE.Scene()
@@ -94,17 +104,19 @@ export default class Game {
       },
       chaseCam
     )
-    const player2Car = await Octane.createCarInstance(
-      scene,
-      world,
-      {
-        x: 6,
-        y: 1,
-        z: 0,
-      },
-      null,
-      true
-    )
+    const player2Car = options?.soloMode
+      ? null
+      : await Octane.createCarInstance(
+          scene,
+          world,
+          {
+            x: 6,
+            y: 1,
+            z: 0,
+          },
+          null,
+          true
+        )
 
     const ballCollisionHandler = (collidedWith: CANNON.Body, ball: Ball) => {
       if (
@@ -117,7 +129,7 @@ export default class Game {
       if (player1Goal.getBodyID() === collidedWith.id)
         Game.updateScore('p2', Game.getScore('p2') + 1)
       player1Car.resetPosition()
-      player2Car.resetPosition()
+      if (player2Car) player2Car.resetPosition()
       ball.resetPosition()
     }
 
@@ -151,7 +163,10 @@ export default class Game {
       ball,
       player1Car,
       camera,
-      player2Car
+      player2Car,
+      player1Goal,
+      player2Goal,
+      options
     )
   }
 
@@ -169,7 +184,7 @@ export default class Game {
   }
 
   animate() {
-    requestAnimationFrame(() => this.animate())
+    this.loopAnimNum = requestAnimationFrame(() => this.animate())
     document.addEventListener('keydown', this.inputHandler, false)
     document.addEventListener('keyup', this.inputHandler, false)
 
@@ -183,7 +198,7 @@ export default class Game {
     // Copy coordinates from Cannon to Three.js
     this.ball.update()
     this.player1Car.update()
-    this.player2Car.update()
+    if (this.player2Car) this.player2Car.update()
     if (this.player1Car) {
       this.player1Car.setZeroTorque()
       if (this.keyMap['w'] || this.keyMap['ArrowUp'])
@@ -195,6 +210,8 @@ export default class Game {
       if (this.keyMap['d'] || this.keyMap['ArrowRight'])
         this.player1Car.turnRight()
       if (this.keyMap['r']) this.player1Car.resetPosition()
+      if (this.keyMap['Escape'] && this.loopAnimNum) this.exitGame()
+
       this.camera.lookAt(this.player1Car.getChassis().position)
     }
 
@@ -209,5 +226,17 @@ export default class Game {
 
   render() {
     this.renderer.render(this.scene, this.camera)
+  }
+
+  exitGame() {
+    cancelAnimationFrame(this.loopAnimNum)
+    document.getElementById('scoreboard-section').classList.add('hidden')
+    document.getElementById('scoreboard-section').classList.remove('flex')
+
+    document.getElementById('game-canvas').classList.add('hidden')
+    document.getElementById('game-canvas').classList.remove('flex')
+
+    document.getElementById('main-menu-section').classList.add('flex')
+    document.getElementById('main-menu-section').classList.remove('hidden')
   }
 }
