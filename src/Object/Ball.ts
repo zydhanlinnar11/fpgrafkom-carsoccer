@@ -100,6 +100,7 @@ export default class Ball {
       this.initBallQuarternion.w
     )
     this.ballBody.velocity.setZero()
+    this.ballBody.angularVelocity.setZero()
     this.hasBeenReset = true
   }
 }

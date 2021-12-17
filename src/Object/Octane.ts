@@ -222,6 +222,7 @@ export default class Octane {
       this.initBodyQuarternion.w
     )
     this.vehicle.chassisBody.velocity.setZero()
+    this.vehicle.chassisBody.angularVelocity.setZero()
 
     for (let i = 0; i < this.wheels.length; i++) {
       if (!this.hasBeenReset) {
@@ -253,6 +254,7 @@ export default class Octane {
         this.initWheelQuarternion[i].w
       )
       this.vehicle.wheelBodies[i].velocity.setZero()
+      this.vehicle.wheelBodies[i].angularVelocity.setZero()
     }
     console.log('reset')
     this.hasBeenReset = true
