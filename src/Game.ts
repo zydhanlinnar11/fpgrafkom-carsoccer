@@ -74,6 +74,7 @@ export default class Game {
   private loopAnimNum?: number
   private options?: GameOption = { soloMode: false }
   private gameStart = false
+  private serverTick: number = 0
 
   private constructor(
     renderer: THREE.WebGLRenderer,
@@ -111,6 +112,9 @@ export default class Game {
     localStorage.clear()
     Game.updateScore('p1', Game.getScore('p1'))
     Game.updateScore('p2', Game.getScore('p2'))
+    setInterval(() => {
+      this.serverTick++
+    }, 1)
   }
 
   static async createGameInstance(
@@ -254,9 +258,9 @@ export default class Game {
     this.remoteKeyMap = JSON.parse(remoteKeyMapStringified)
   }
 
-  remoteUpdatePosHandler = (remotePosStringified: string) => {
-    this.remotePos = JSON.parse(remotePosStringified)
-    // console.log(JSON.parse(remotePosStringified))
+  remoteUpdatePosHandler = (remotePos: NetworkPositionInfo) => {
+    this.remotePos = remotePos
+    // console.log(JSON.parse(remotePos))
     Game.updateScore('p1', this.remotePos.score.p1)
     Game.updateScore('p2', this.remotePos.score.p2)
     if (!this.options?.soloMode && this.player2Car) {
@@ -389,12 +393,11 @@ export default class Game {
           ball: this.ball.getBall().quaternion,
         },
       }
-      if (this.options?.socket)
-        this.options.socket.emit(
-          'update-pos',
-          this.options?.roomID,
-          JSON.stringify(posInfo)
-        )
+      if (this.options?.socket && this.serverTick >= 10) {
+        this.serverTick = 0
+        console.log('10ms')
+        this.options.socket.emit('update-pos', this.options?.roomID, posInfo)
+      }
     }
 
     this.camera.lookAt(locallyControlledCar.getChassis().position)
