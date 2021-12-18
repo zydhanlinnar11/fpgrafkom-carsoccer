@@ -66,9 +66,7 @@ document.getElementById('solo-button').addEventListener('click', () => {
 })
 
 const socket = io(
-  PRODUCTION
-    ? 'https://api.fp-grafkom.zydhan.xyz:3000'
-    : 'http://10.11.11.11:3000'
+  PRODUCTION ? 'https://api.fp-grafkom.zydhan.xyz' : 'http://10.11.11.11:3000'
 )
 
 let waitingForFriend = false
