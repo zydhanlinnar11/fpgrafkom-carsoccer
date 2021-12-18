@@ -26,7 +26,11 @@ export default class Ball {
   ) {
     this.ball = ballGLTF
     this.ball.scale.set(1.5, 1.5, 1.5)
-    this.ball.castShadow = true
+    this.ball.traverse((child: Object3DGLTF) => {
+      if (child.isMesh) {
+        child.castShadow = true
+      }
+    })
     this.ball.position.set(x, y, z)
     scene.add(this.ball)
 

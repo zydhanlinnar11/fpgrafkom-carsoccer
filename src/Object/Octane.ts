@@ -43,6 +43,7 @@ export default class Octane {
     this.octane.traverse((child: Object3DGLTF) => {
       if (child.isMesh) {
         child.material.metalness = 0
+        child.castShadow = true
       }
     })
     for (let i = 1; i < nodes.length; i++) {
@@ -52,7 +53,6 @@ export default class Octane {
     }
 
     this.octane.scale.set(2, 2, 2)
-    this.octane.castShadow = true
     this.octane.position.set(x, y, z)
     scene.add(this.octane)
     if (chaseCam) this.octane.add(chaseCam)

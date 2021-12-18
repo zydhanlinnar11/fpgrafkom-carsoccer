@@ -15,6 +15,8 @@ const launchGame = async (options?: GameOption) => {
   const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('.webgl'),
   })
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   renderer.setSize(window.innerWidth, window.innerHeight)
   document.body.appendChild(renderer.domElement)

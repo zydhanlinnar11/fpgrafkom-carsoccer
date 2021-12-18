@@ -22,6 +22,11 @@ export default class Goal {
     this.goal = goalGLTF
     this.goal.scale.set(0.0275, 0.0275, 0.0275)
     this.goal.rotateZ(rotation)
+    this.goal.traverse((child: Object3DGLTF) => {
+      if (child.isMesh) {
+        child.castShadow = true
+      }
+    })
     this.goal.position.set(x, y, z)
     scene.add(this.goal)
 

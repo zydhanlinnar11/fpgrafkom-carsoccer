@@ -206,12 +206,12 @@ export default class Game {
     createLight(scene, { x: 0, y: Game.WALL_HEIGHT / 2, z: 0 })
     createPlane(scene, world, Game.planeSize)
     spawnFourWall(scene, world, Game.planeSize, Game.WALL_HEIGHT)
-    createWall(
-      scene,
-      world,
-      { x: Game.planeSize.width, y: 1, z: Game.planeSize.height },
-      { x: 0, y: Game.WALL_HEIGHT, z: 0 }
-    )
+    // createWall(
+    //   scene,
+    //   world,
+    //   { x: Game.planeSize.width, y: 1, z: Game.planeSize.height },
+    //   { x: 0, y: Game.WALL_HEIGHT, z: 0 }
+    // )
 
     return new Game(
       renderer,

@@ -13,7 +13,7 @@ export function createWall(
   brickTexture.wrapS = THREE.RepeatWrapping
   brickTexture.wrapT = THREE.RepeatWrapping
 
-  const wallGeometry: THREE.PlaneGeometry = new THREE.BoxGeometry(
+  const wallGeometry: THREE.BoxGeometry = new THREE.BoxGeometry(
     size.x,
     size.y,
     size.z
@@ -22,7 +22,8 @@ export function createWall(
     wallGeometry,
     new THREE.MeshPhongMaterial({ color, map: brickTexture })
   )
-  wallMesh.position.set(pos.x, pos.y, pos.z)
+  wallMesh.scale.y /= 6
+  wallMesh.position.set(pos.x, 0, pos.z)
   const wall = new CANNON.Body({ mass: 0 })
   wall.addShape(
     new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2))
@@ -42,7 +43,7 @@ export default function spawnWall(
   createWall(
     scene,
     world,
-    { x: 1, y: height, z: planeSize.height },
+    { x: 1, y: height, z: planeSize.height +1 },
     {
       x: planeSize.width / 2,
       y: height / 2,
@@ -54,7 +55,7 @@ export default function spawnWall(
   createWall(
     scene,
     world,
-    { x: 1, y: height, z: planeSize.height },
+    { x: 1, y: height, z: planeSize.height +1 },
     {
       x: -planeSize.width / 2,
       y: height / 2,
