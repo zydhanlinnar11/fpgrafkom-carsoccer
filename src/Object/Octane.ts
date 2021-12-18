@@ -138,7 +138,7 @@ export default class Octane {
       this.soundStartup.setVolume(0.2)
     })
 
-    audioLoader.load('/sound/med_off.wav', (buffer) => {
+    audioLoader.load('/sound/low_off.wav', (buffer) => {
       this.soundEngine.setBuffer(buffer)
       this.soundEngine.setLoop(true)
       this.soundEngine.setVolume(0.1)
@@ -175,7 +175,7 @@ export default class Octane {
   playEngineDriveOff() {
     if (this.soundEngine && this.soundEngine.getVolume() !== 0.1) {
       // console.log("Drive Off")
-      this.soundEngine.setVolume(0.1)
+      this.soundEngine.setVolume(0)
     }
   }
 
