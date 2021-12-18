@@ -71,6 +71,10 @@ export default class Game {
     this.clock = new THREE.Clock()
 
     this.options = options
+    if (this.options?.socket)
+      this.options.socket.on('receive-input', this.remoteInputHandler)
+    document.addEventListener('keydown', this.inputHandler, false)
+    document.addEventListener('keyup', this.inputHandler, false)
     localStorage.clear()
     Game.updateScore('p1', Game.getScore('p1'))
     Game.updateScore('p2', Game.getScore('p2'))
@@ -190,8 +194,7 @@ export default class Game {
   }
 
   inputHandler = (e: KeyboardEvent) => {
-    console.log(this.options.roomID)
-
+    // console.log(this.options.roomID)
     this.keyMap[e.key] = e.type === 'keydown'
     if (!this.options?.soloMode && this.options?.isFirstPlayer)
       this.options?.socket.emit(
@@ -209,15 +212,10 @@ export default class Game {
 
   remoteInputHandler = (remoteKeyMapStringified: string) => {
     this.remoteKeyMap = JSON.parse(remoteKeyMapStringified)
-    console.log(this.remoteKeyMap)
   }
 
   animate() {
     this.loopAnimNum = requestAnimationFrame(() => this.animate())
-    document.addEventListener('keydown', this.inputHandler, false)
-    document.addEventListener('keyup', this.inputHandler, false)
-    if (this.options?.socket)
-      this.options.socket.on('receive-input', this.remoteInputHandler)
 
     if (DEBUG) cannonDebugger(this.scene, this.world.bodies)
 
@@ -259,6 +257,7 @@ export default class Game {
         (!this.options?.isFirstPlayer && this.remoteKeyMap.player !== 'p2'))
     ) {
       // console.log(this.remoteKeyMap)
+      // console.log(this.remoteKeyMap?.keyMap?.['w'])
       if (this.remoteKeyMap.keyMap['w'] || this.remoteKeyMap.keyMap['ArrowUp'])
         remotelyControlledCar.accelerate()
       if (
