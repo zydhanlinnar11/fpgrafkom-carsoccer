@@ -216,7 +216,8 @@ export default class Game {
     this.loopAnimNum = requestAnimationFrame(() => this.animate())
     document.addEventListener('keydown', this.inputHandler, false)
     document.addEventListener('keyup', this.inputHandler, false)
-    this.options.socket.on('receive-input', this.remoteInputHandler)
+    if (this.options?.socket)
+      this.options.socket.on('receive-input', this.remoteInputHandler)
 
     if (DEBUG) cannonDebugger(this.scene, this.world.bodies)
 
