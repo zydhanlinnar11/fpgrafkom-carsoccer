@@ -24,12 +24,17 @@ export default class Octane {
   private initWheelPos: CANNON.Vec3[] = []
   private initWheelQuarternion: CANNON.Quaternion[] = []
   private hasBeenReset: boolean = false
+  private soundStartup: THREE.Audio | null = null
+  private bufferStartup: AudioBuffer | null = null
+  private soundEngine: THREE.Audio | null = null
+  private bufferEngine: AudioBuffer | null = null
 
   private constructor(
     scene: THREE.Scene,
     world: CANNON.World,
     nodes: THREE.Object3D<THREE.Event>[],
     { x, y, z }: Coordinate,
+    audioListener: THREE.AudioListener,
     chaseCam?: THREE.Object3D<THREE.Event>,
     reverseOrientation: boolean = false
   ) {
@@ -94,6 +99,8 @@ export default class Octane {
         direction: down,
       })
 
+      this.setAudio(audioListener)
+
       world.addBody(this.vehicle.wheelBodies[i])
       world.addConstraint(this.vehicle.constraints[i])
       this.vehicle.wheelBodies[i].angularDamping = 0.3
@@ -104,6 +111,7 @@ export default class Octane {
     scene: THREE.Scene,
     world: CANNON.World,
     position: Coordinate,
+    audioListener: THREE.AudioListener,
     chaseCam?: THREE.Object3D<THREE.Event>,
     reverseOrientation: boolean = false
   ) {
@@ -114,9 +122,72 @@ export default class Octane {
       world,
       nodes,
       position,
+      audioListener,
       chaseCam,
       reverseOrientation
     )
+  }
+
+  setAudio(audioListener: THREE.AudioListener) {
+    this.soundStartup = new THREE.Audio(audioListener)
+    this.soundEngine = new THREE.Audio(audioListener)
+    const audioLoader = new THREE.AudioLoader()
+    
+    audioLoader.load('/sound/startup.wav', (buffer) => {
+      this.soundStartup.setBuffer(buffer)
+      this.soundStartup.setVolume(0.2)
+    })
+
+    audioLoader.load('/sound/med_off.wav', (buffer) => {
+      this.soundEngine.setBuffer(buffer)
+      this.soundEngine.setLoop(true)
+      this.soundEngine.setVolume(0.1)
+    })
+  }
+
+  playStartup() {
+    if (this.soundStartup && !this.soundStartup.isPlaying) {
+      // console.log("Startup Sound")
+      this.soundStartup.play()
+    }
+  }
+
+  playEngineOn() {
+    if (this.soundEngine && !this.soundEngine.isPlaying) {
+      // console.log("Engine On")
+      this.soundEngine.play()
+    }
+  }
+
+  playEngineDriveForward() {
+    if (this.soundEngine && this.soundEngine.getVolume() !== 0.3){
+      // console.log("Engine Forward")
+      this.soundEngine.setVolume(0.3)
+    }
+  }
+  playEngineDriveBackward() {
+    if (this.soundEngine && this.soundEngine.getVolume() !== 0.2) {
+      // console.log("Engine Backward")
+      this.soundEngine.setVolume(0.2)
+    }
+  }
+
+  playEngineDriveOff() {
+    if (this.soundEngine && this.soundEngine.getVolume() !== 0.1) {
+      // console.log("Drive Off")
+      this.soundEngine.setVolume(0.1)
+    }
+  }
+
+  soundOff() {
+    if (this.soundStartup) {
+      // console.log('Startup Stop')
+      this.soundStartup.stop()
+    }
+    if (this.soundEngine) {
+      // console.log("Engine Stop")
+      this.soundEngine.stop()
+    }
   }
 
   update() {

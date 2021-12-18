@@ -73,6 +73,7 @@ export default class Game {
   private delta: number
   private loopAnimNum?: number
   private options?: GameOption = { soloMode: false }
+  private gameStart = false
 
   private constructor(
     renderer: THREE.WebGLRenderer,
@@ -140,6 +141,11 @@ export default class Game {
       },
       Math.PI / 2
     )
+
+    // Set Audio
+    const audioListener = new THREE.AudioListener()
+    camera.add(audioListener)
+
     const player1Car = await Octane.createCarInstance(
       scene,
       world,
@@ -148,6 +154,7 @@ export default class Game {
         y: 1,
         z: 0,
       },
+      audioListener,
       options.soloMode || options.isFirstPlayer ? chaseCam : null
     )
     const player2Car = options?.soloMode
@@ -160,6 +167,7 @@ export default class Game {
             y: 1,
             z: 0,
           },
+          audioListener,
           options.soloMode || options.isFirstPlayer ? null : chaseCam,
           true
         )
@@ -293,16 +301,30 @@ export default class Game {
     if (this.player2Car) this.player2Car.update()
 
     locallyControlledCar.setZeroTorque()
-    if (this.keyMap['w'] || this.keyMap['ArrowUp'])
+    this.player1Car.playEngineDriveOff()
+    if (this.keyMap['w'] || this.keyMap['ArrowUp']){
       locallyControlledCar.accelerate()
-    if (this.keyMap['s'] || this.keyMap['ArrowDown'])
+      this.player1Car.playEngineDriveForward()
+    }
+    if (this.keyMap['s'] || this.keyMap['ArrowDown']){
       locallyControlledCar.reverse()
+      this.player1Car.playEngineDriveBackward()
+    }
     if (this.keyMap['a'] || this.keyMap['ArrowLeft'])
       locallyControlledCar.turnLeft()
     if (this.keyMap['d'] || this.keyMap['ArrowRight'])
       locallyControlledCar.turnRight()
     if (this.keyMap['r']) locallyControlledCar.resetPosition()
-    if (this.keyMap['Escape'] && this.loopAnimNum) this.exitGame()
+    if (this.keyMap['Escape'] && this.loopAnimNum) {
+      this.exitGame()
+      this.player1Car.soundOff()
+    }
+
+    if(!this.gameStart){
+      this.player1Car.playStartup()
+      this.player1Car.playEngineOn()
+      this.gameStart = true
+    }
 
     if (
       remotelyControlledCar &&
