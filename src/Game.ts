@@ -8,6 +8,7 @@ import createChaseCam from './chaseCam'
 import cannonDebugger from 'cannon-es-debugger'
 import Octane from './Object/Octane'
 import Goal from './Object/Goal'
+import Skybox from './Skybox'
 import { hideCreateRoomMenu, hideJoinRoomMenu, showMainMenu } from './script'
 import { Socket } from 'socket.io-client'
 const DEBUG = false
@@ -124,6 +125,7 @@ export default class Game {
   ) {
     const world = new CANNON.World()
     const scene = new THREE.Scene()
+    Skybox(scene)
     const { chaseCam, chaseCamPivot } = createChaseCam(scene)
     const player1Goal = await Goal.createGoalInstance(
       scene,
