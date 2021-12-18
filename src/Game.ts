@@ -12,6 +12,34 @@ import { hideCreateRoomMenu, hideJoinRoomMenu, showMainMenu } from './script'
 import { Socket } from 'socket.io-client'
 const DEBUG = false
 
+interface NetworkPositionInfo {
+  score: {
+    [player: string]: number
+  }
+  position: {
+    p1: {
+      chassis: THREE.Vector3
+      wheels: THREE.Vector3[]
+    }
+    p2: {
+      chassis: THREE.Vector3
+      wheels: THREE.Vector3[]
+    }
+    ball: THREE.Vector3
+  }
+  quarternion: {
+    p1: {
+      chassis: THREE.Quaternion
+      wheels: THREE.Quaternion[]
+    }
+    p2: {
+      chassis: THREE.Quaternion
+      wheels: THREE.Quaternion[]
+    }
+    ball: THREE.Quaternion
+  }
+}
+
 export interface GameOption {
   soloMode?: boolean
   socket?: Socket
@@ -31,6 +59,7 @@ export default class Game {
     player?: 'p1' | 'p2'
     keyMap: { [id: string]: boolean }
   }
+  private remotePos: NetworkPositionInfo
 
   private renderer: THREE.WebGLRenderer
   private scene: THREE.Scene
@@ -69,10 +98,13 @@ export default class Game {
     this.keyMap = {}
     this.remoteKeyMap = { keyMap: {} }
     this.clock = new THREE.Clock()
+    this.remotePos = null
 
     this.options = options
     if (this.options?.socket)
       this.options.socket.on('receive-input', this.remoteInputHandler)
+    if (this.options?.socket)
+      this.options.socket.on('receive-pos', this.remoteUpdatePosHandler)
     document.addEventListener('keydown', this.inputHandler, false)
     document.addEventListener('keyup', this.inputHandler, false)
     localStorage.clear()
@@ -190,7 +222,7 @@ export default class Game {
   }
 
   static getScore(player: 'p1' | 'p2') {
-    return JSON.parse(localStorage.getItem(`${player}-score`)) ?? 0
+    return (JSON.parse(localStorage.getItem(`${player}-score`)) as number) ?? 0
   }
 
   inputHandler = (e: KeyboardEvent) => {
@@ -212,6 +244,27 @@ export default class Game {
 
   remoteInputHandler = (remoteKeyMapStringified: string) => {
     this.remoteKeyMap = JSON.parse(remoteKeyMapStringified)
+  }
+
+  remoteUpdatePosHandler = (remotePosStringified: string) => {
+    this.remotePos = JSON.parse(remotePosStringified)
+    // console.log(JSON.parse(remotePosStringified))
+    Game.updateScore('p1', this.remotePos.score.p1)
+    Game.updateScore('p2', this.remotePos.score.p2)
+    if (!this.options?.soloMode && this.player2Car) {
+      this.player1Car.updatePositionFromNetwork(this.remotePos.position.p1)
+      // this.player1Car.updateQuarternionFromNetwork(
+      //   this.remotePos.quarternion.p1
+      // )
+      this.player2Car.updatePositionFromNetwork(this.remotePos.position.p2)
+      this.ball.updatePositionFromNetwork(this.remotePos.position.ball)
+      // this.ball.updateQuarternionFromNetwork(this.remotePos.quarternion.ball)
+      console.log(this.remotePos.quarternion.ball)
+
+      // this.player2Car.updateQuarternionFromNetwork(
+      //   this.remotePos.quarternion.p2
+      // )
+    }
   }
 
   animate() {
@@ -253,8 +306,8 @@ export default class Game {
 
     if (
       remotelyControlledCar &&
-      ((this.options?.isFirstPlayer && this.remoteKeyMap.player !== 'p1') ||
-        (!this.options?.isFirstPlayer && this.remoteKeyMap.player !== 'p2'))
+      this.options?.isFirstPlayer &&
+      this.remoteKeyMap.player !== 'p1'
     ) {
       // console.log(this.remoteKeyMap)
       // console.log(this.remoteKeyMap?.keyMap?.['w'])
@@ -278,6 +331,48 @@ export default class Game {
       if (this.remoteKeyMap.keyMap['r']) remotelyControlledCar.resetPosition()
       if (this.remoteKeyMap.keyMap['Escape'] && this.loopAnimNum)
         this.exitGame()
+      const posInfo: NetworkPositionInfo = {
+        score: {
+          p1: Game.getScore('p1'),
+          p2: Game.getScore('p2'),
+        },
+        position: {
+          p1: {
+            chassis: locallyControlledCar.getChassis().position,
+            wheels: locallyControlledCar
+              .getWheels()
+              .map((wheel) => wheel.position),
+          },
+          p2: {
+            chassis: remotelyControlledCar.getChassis().position,
+            wheels: remotelyControlledCar
+              .getWheels()
+              .map((wheel) => wheel.position),
+          },
+          ball: this.ball.getBall().position,
+        },
+        quarternion: {
+          p1: {
+            chassis: locallyControlledCar.getChassis().quaternion,
+            wheels: locallyControlledCar
+              .getWheels()
+              .map((wheel) => wheel.quaternion),
+          },
+          p2: {
+            chassis: remotelyControlledCar.getChassis().quaternion,
+            wheels: remotelyControlledCar
+              .getWheels()
+              .map((wheel) => wheel.quaternion),
+          },
+          ball: this.ball.getBall().quaternion,
+        },
+      }
+      if (this.options?.socket)
+        this.options.socket.emit(
+          'update-pos',
+          this.options?.roomID,
+          JSON.stringify(posInfo)
+        )
     }
 
     this.camera.lookAt(locallyControlledCar.getChassis().position)

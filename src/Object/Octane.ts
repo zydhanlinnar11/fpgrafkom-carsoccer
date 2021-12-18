@@ -195,6 +195,10 @@ export default class Octane {
     return this.octane
   }
 
+  getWheels() {
+    return this.wheels
+  }
+
   resetPosition() {
     if (!this.hasBeenReset) {
       this.initBodyPos = new Vec3(
@@ -256,5 +260,55 @@ export default class Octane {
       this.vehicle.wheelBodies[i].angularVelocity.setZero()
     }
     this.hasBeenReset = true
+  }
+
+  updatePositionFromNetwork({
+    chassis,
+    wheels,
+  }: {
+    chassis: THREE.Vector3
+    wheels: THREE.Vector3[]
+  }) {
+    this.vehicle.chassisBody.position.set(chassis.x, chassis.y, chassis.z)
+
+    for (
+      let i = 0;
+      i < wheels.length && i < this.vehicle.wheelBodies.length;
+      i++
+    ) {
+      this.vehicle.wheelBodies[i].position.set(
+        wheels[i].x,
+        wheels[i].y,
+        wheels[i].z
+      )
+    }
+  }
+
+  updateQuarternionFromNetwork({
+    chassis,
+    wheels,
+  }: {
+    chassis: THREE.Quaternion
+    wheels: THREE.Quaternion[]
+  }) {
+    this.vehicle.chassisBody.quaternion.set(
+      chassis.x,
+      chassis.y,
+      chassis.z,
+      chassis.w
+    )
+
+    for (
+      let i = 0;
+      i < wheels.length && i < this.vehicle.wheelBodies.length;
+      i++
+    ) {
+      this.vehicle.wheelBodies[i].quaternion.set(
+        wheels[i].x,
+        wheels[i].y,
+        wheels[i].z,
+        wheels[i].w
+      )
+    }
   }
 }

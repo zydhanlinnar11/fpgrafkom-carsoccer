@@ -102,4 +102,21 @@ export default class Ball {
     this.ballBody.angularVelocity.setZero()
     this.hasBeenReset = true
   }
+
+  getBall() {
+    return this.ball
+  }
+
+  updatePositionFromNetwork(position: THREE.Vector3) {
+    this.ballBody.position.set(position.x, position.y, position.z)
+  }
+
+  updateQuarternionFromNetwork(quaternion: THREE.Quaternion) {
+    this.ballBody.quaternion.set(
+      quaternion.x,
+      quaternion.y,
+      quaternion.z,
+      quaternion.w
+    )
+  }
 }
