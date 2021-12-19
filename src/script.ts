@@ -15,8 +15,8 @@ const launchGame = async (options?: GameOption) => {
   const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('.webgl'),
   })
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   renderer.setSize(window.innerWidth, window.innerHeight)
   document.body.appendChild(renderer.domElement)
@@ -157,4 +157,26 @@ document
       })
       console.log(status, message)
     })
+  })
+
+export const hideHowToPlayMenu = () => {
+  document.getElementById('how-to-play-section').classList.remove('flex')
+  document.getElementById('how-to-play-section').classList.add('hidden')
+}
+
+export const showHowToPlayMenu = () => {
+  document.getElementById('how-to-play-section').classList.remove('hidden')
+  document.getElementById('how-to-play-section').classList.add('flex')
+}
+
+document.getElementById('how-to-play-button').addEventListener('click', () => {
+  hideMainMenu()
+  showHowToPlayMenu()
+})
+
+document
+  .getElementById('back-to-menu-button-from-how-to')
+  .addEventListener('click', () => {
+    hideHowToPlayMenu()
+    showMainMenu()
   })
